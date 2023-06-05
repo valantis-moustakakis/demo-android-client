@@ -12,7 +12,7 @@ public class Constants {
 
     public static final String EMAIL_ADDRESS_REGEX = "^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,10}$";
 
-    public static final String BASE_URL = "http://192.168.1.132:8080/demo";
+    public static final String BASE_URL = "http://192.168.1.133:8080/demo";
     public static final String AUTHENTICATION_URL = "/authentication";
     public static final String REGISTRATION_URL = "/registration";
     public static final String REPORT_URL = "/report";

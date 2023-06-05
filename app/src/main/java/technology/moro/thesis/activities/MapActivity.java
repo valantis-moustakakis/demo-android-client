@@ -37,6 +37,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -62,7 +63,7 @@ import technology.moro.thesis.dtos.Incident;
 import technology.moro.thesis.R;
 import technology.moro.thesis.dtos.StreetInfo;
 
-public class MapActivity extends AppCompatActivity implements OnMapReadyCallback {
+public class MapActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnCameraChangeListener {
 
     private static final int REQUEST_LOCATION_PERMISSION = 1;
 
@@ -72,6 +73,9 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
     private SharedPreferences sharedPreferences;
     private OkHttpClient httpClient;
+
+    private String jwtToken;
+    private String email;
 
     @SuppressLint("SimpleDateFormat")
     SimpleDateFormat dt = new SimpleDateFormat(DATE_FORMAT);
@@ -123,6 +127,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+        mMap.setOnCameraChangeListener(this);
 
         // Check if location is enabled on the device
         boolean isLocationEnabled = isLocationEnabled();
@@ -143,17 +148,14 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         // Start location updates
         startLocationUpdates();
 
-        String jwtToken = sharedPreferences.getString(JWT_TOKEN_KEY, "");
-        String email = sharedPreferences.getString(EMAIL_KEY, "");
+        jwtToken = sharedPreferences.getString(JWT_TOKEN_KEY, "");
+        email = sharedPreferences.getString(EMAIL_KEY, "");
         // Perform the GET requests for incidents and streets
         performGetIncidentsRequest(email, jwtToken);
         performGetStreetRequest(email, jwtToken);
     }
 
     private void performGetIncidentsRequest(String email, String jwtToken) {
-        // Make a GET request to "http://localhost:8080/getIncidents"
-        // You can use libraries like OkHttp or Retrofit to perform the request
-
         LatLngBounds boundingBox = getMapBoundingBox();
         double swlat = boundingBox.southwest.latitude;
         double swlon = boundingBox.southwest.longitude;
@@ -318,10 +320,6 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         Bitmap orangeDot = getBitmap(R.drawable.orange_dot);
         Bitmap yellowDot = getBitmap(R.drawable.yellow_dot);
 
-//        Bitmap redDot = BitmapFactory.decodeResource(getResources(), R.drawable.red_dot);
-//        Bitmap orangeDot = BitmapFactory.decodeResource(getResources(), R.drawable.orange_dot);
-//        Bitmap yellowDot = BitmapFactory.decodeResource(getResources(), R.drawable.yellow_dot);
-
         for (StreetInfo street : streets) {
             LatLng latLng = new LatLng(street.getLatitude(), street.getLongitude());
             MarkerOptions markerOptions = new MarkerOptions()
@@ -330,15 +328,12 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             // Set marker icon based on severity
             switch (street.getSeverity()) {
                 case "HIGH":
-//                    markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
                     markerOptions.icon(BitmapDescriptorFactory.fromBitmap(redDot));
                     break;
                 case "MEDIUM":
-//                    markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE));
                     markerOptions.icon(BitmapDescriptorFactory.fromBitmap(orangeDot));
                     break;
                 case "LOW":
-//                    markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW));
                     markerOptions.icon(BitmapDescriptorFactory.fromBitmap(yellowDot));
                     break;
             }
@@ -435,5 +430,15 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 t.show();
             }
         });
+    }
+
+    @Override
+    public void onCameraChange(CameraPosition cameraPosition) {
+        // Execute your code here
+        // This method will be called every time the user changes the map (e.g., zooms, pans, etc.)
+        // You can access the updated camera position using cameraPosition parameter
+        mMap.clear();
+        performGetIncidentsRequest(email, jwtToken);
+        performGetStreetRequest(email, jwtToken);
     }
 }
