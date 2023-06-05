@@ -3,10 +3,12 @@ package technology.moro.thesis.activities;
 import static technology.moro.thesis.Constants.BASE_URL;
 import static technology.moro.thesis.Constants.JSON_MEDIA_TYPE;
 import static technology.moro.thesis.Constants.REGISTRATION_URL;
+import static technology.moro.thesis.validators.CredentialsValidator.validateConfirmPassword;
+import static technology.moro.thesis.validators.CredentialsValidator.validateEmail;
+import static technology.moro.thesis.validators.CredentialsValidator.validatePassword;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Patterns;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -29,6 +31,7 @@ public class SignUpActivity extends AppCompatActivity {
 
     private EditText emailEditText;
     private EditText passwordEditText;
+    private EditText confirmPasswordEditText;
     private Button signUpButton;
 
     private OkHttpClient httpClient;
@@ -40,6 +43,7 @@ public class SignUpActivity extends AppCompatActivity {
 
         emailEditText = findViewById(R.id.email_edit_text);
         passwordEditText = findViewById(R.id.password_edit_text);
+        confirmPasswordEditText = findViewById(R.id.confirm_password_edit_text);
         signUpButton = findViewById(R.id.sign_up_button);
 
         httpClient = new OkHttpClient();
@@ -49,30 +53,36 @@ public class SignUpActivity extends AppCompatActivity {
             public void onClick(View v) {
                 String email = emailEditText.getText().toString().trim();
                 String password = passwordEditText.getText().toString().trim();
+                String confirmPassword = confirmPasswordEditText.getText().toString().trim();
 
-                if (isInputValid(email, password)) {
-                    performSignUp(email, password);
+                if (isInputValid(email, password, confirmPassword)) {
+                    performSignUp(email, password, confirmPassword);
                 }
             }
         });
     }
 
-    private boolean isInputValid(String email, String password) {
-        if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+    private boolean isInputValid(String email, String password, String confirmPassword) {
+        if (email.isEmpty() || !validateEmail(email)) {
             showToast("Invalid email");
             return false;
         }
 
-        if (password.isEmpty() || password.length() < 6) {
-            showToast("Invalid password");
+        if (password.isEmpty() || !validatePassword(password)) {
+            showToast("Password must be between 7 and 30 characters long");
+            return false;
+        }
+
+        if (confirmPassword.isEmpty() || !validateConfirmPassword(password, confirmPassword)) {
+            showToast("Passwords do not match");
             return false;
         }
 
         return true;
     }
 
-    private void performSignUp(String email, String password) {
-        AuthenticationDTO authentication = new AuthenticationDTO(email, password);
+    private void performSignUp(String email, String password, String confirmPassword) {
+        AuthenticationDTO authentication = new AuthenticationDTO(email, password, confirmPassword);
         RequestBody body = RequestBody.create(authentication.toJsonString(), JSON_MEDIA_TYPE);
 
         Request request = new Request.Builder()
@@ -88,7 +98,7 @@ public class SignUpActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
+            public void onResponse(Call call, Response response) {
                 if (response.isSuccessful()) {
                     navigateToLogin();
                 } else {
@@ -101,6 +111,7 @@ public class SignUpActivity extends AppCompatActivity {
 
     private void navigateToLogin() {
         Intent loginIntent = new Intent(SignUpActivity.this, LoginActivity.class);
+        loginIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(loginIntent);
         finish();
     }

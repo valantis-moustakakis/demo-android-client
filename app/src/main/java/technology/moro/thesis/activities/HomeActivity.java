@@ -85,7 +85,8 @@ public class HomeActivity extends AppCompatActivity {
         editor.remove(EMAIL_KEY);
         editor.apply();
 
-        Intent authIntent = new Intent(HomeActivity.this, LoginActivity.class);
+        Intent authIntent = new Intent(HomeActivity.this, AuthenticationActivity.class);
+        authIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(authIntent);
         finish();
     }

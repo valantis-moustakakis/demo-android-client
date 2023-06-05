@@ -6,11 +6,12 @@ import static technology.moro.thesis.Constants.EMAIL_KEY;
 import static technology.moro.thesis.Constants.JSON_MEDIA_TYPE;
 import static technology.moro.thesis.Constants.JWT_TOKEN_KEY;
 import static technology.moro.thesis.Constants.PREF_NAME;
+import static technology.moro.thesis.validators.CredentialsValidator.validateEmail;
+import static technology.moro.thesis.validators.CredentialsValidator.validatePassword;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.util.Patterns;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -24,7 +25,6 @@ import java.io.IOException;
 
 import okhttp3.Call;
 import okhttp3.Callback;
-import okhttp3.FormBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -68,13 +68,12 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private boolean isInputValid(String email, String password) {
-        // TODO: change this pattern
-        if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+        if (email.isEmpty() || !validateEmail(email)) {
             showToast("Invalid email");
             return false;
         }
 
-        if (password.isEmpty() || password.length() < 6) {
+        if (password.isEmpty() || !validatePassword(password)) {
             showToast("Invalid password");
             return false;
         }
@@ -123,6 +122,7 @@ public class LoginActivity extends AppCompatActivity {
 
     private void navigateToHome() {
         Intent homeIntent = new Intent(LoginActivity.this, HomeActivity.class);
+        homeIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(homeIntent);
         finish();
     }

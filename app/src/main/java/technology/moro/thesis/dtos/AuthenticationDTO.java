@@ -6,10 +6,17 @@ public class AuthenticationDTO {
 
     private String email;
     private String password;
+    private String confirmPassword;
 
     public AuthenticationDTO(String email, String password) {
         this.email = email;
         this.password = password;
+    }
+
+    public AuthenticationDTO(String email, String password, String confirmPassword) {
+        this.email = email;
+        this.password = password;
+        this.confirmPassword = confirmPassword;
     }
 
     public String getEmail() {
@@ -26,6 +33,14 @@ public class AuthenticationDTO {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getConfirmPassword() {
+        return confirmPassword;
+    }
+
+    public void setConfirmPassword(String confirmPassword) {
+        this.confirmPassword = confirmPassword;
     }
 
     public String toJsonString() {
