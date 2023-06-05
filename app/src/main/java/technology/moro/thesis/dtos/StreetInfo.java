@@ -1,16 +1,14 @@
 package technology.moro.thesis.dtos;
 
-public class Street {
+public class StreetInfo {
     private String severity;
     private float latitude;
     private float longitude;
-    private String lastRetrievalDate;
 
-    public Street(String severity, float latitude, float longitude, String lastRetrievalDate) {
+    public StreetInfo(String severity, float latitude, float longitude) {
         this.severity = severity;
         this.latitude = latitude;
         this.longitude = longitude;
-        this.lastRetrievalDate = lastRetrievalDate;
     }
 
     public String getSeverity() {
@@ -23,9 +21,5 @@ public class Street {
 
     public float getLongitude() {
         return longitude;
-    }
-
-    public String getLastRetrievalDate() {
-        return lastRetrievalDate;
     }
 }

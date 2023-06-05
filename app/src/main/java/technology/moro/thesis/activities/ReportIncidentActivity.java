@@ -15,6 +15,7 @@ import android.location.Location;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -149,7 +150,9 @@ public class ReportIncidentActivity extends AppCompatActivity implements OnMapRe
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Toast.makeText(ReportIncidentActivity.this, message, Toast.LENGTH_SHORT).show();
+                Toast t = Toast.makeText(ReportIncidentActivity.this, message, Toast.LENGTH_SHORT);
+                t.setGravity(Gravity.FILL_HORIZONTAL, 0, 0);
+                t.show();
             }
         });
     }

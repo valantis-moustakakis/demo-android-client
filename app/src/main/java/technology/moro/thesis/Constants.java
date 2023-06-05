@@ -17,6 +17,7 @@ public class Constants {
     public static final String REGISTRATION_URL = "/registration";
     public static final String REPORT_URL = "/report";
     public static final String GET_REPORTS_URL = "/get-reports";
+    public static final String GET_STREET_INFO_URL = "/get-street-info";
 
     public static final MediaType JSON_MEDIA_TYPE = MediaType.get("application/json; charset=utf-8");
 

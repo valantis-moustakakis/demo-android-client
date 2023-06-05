@@ -24,6 +24,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -387,7 +388,7 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
         boolean isLocationEnabled = isLocationEnabled();
         if (!isLocationEnabled) {
             // Location is disabled, show a toast message and navigate back to HomeActivity
-            Toast.makeText(this, "Location is disabled. Map cannot be used.", Toast.LENGTH_SHORT).show();
+            showToast("Location is disabled. Map cannot be used.");
             navigateToHomeActivity();
             return;
         }
@@ -481,4 +482,15 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
 //        }
 //        editor.apply();
 //    }
+
+    private void showToast(final String message) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toast t = Toast.makeText(MeasurementActivity.this, message, Toast.LENGTH_SHORT);
+                t.setGravity(Gravity.FILL_HORIZONTAL, 0, 0);
+                t.show();
+            }
+        });
+    }
 }

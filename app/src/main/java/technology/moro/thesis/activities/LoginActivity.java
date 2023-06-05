@@ -12,6 +12,7 @@ import static technology.moro.thesis.validators.CredentialsValidator.validatePas
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -99,14 +100,14 @@ public class LoginActivity extends AppCompatActivity {
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
+                String stringAuthenticationResponse = response.body().string();
+                Gson gson = new Gson();
+                AuthenticationResponseDTO authenticationResponse = gson.fromJson(stringAuthenticationResponse, AuthenticationResponseDTO.class);
                 if (response.isSuccessful()) {
-                    String stringAuthenticationResponse = response.body().string();
-                    Gson gson = new Gson();
-                    AuthenticationResponseDTO authenticationResponse = gson.fromJson(stringAuthenticationResponse, AuthenticationResponseDTO.class);
                     saveToSharedPreferences(email, authenticationResponse.getToken());
                     navigateToHome();
                 } else {
-                    showToast("Login failed");
+                    showToast("Login failed:\n" + authenticationResponse.getMessage());
                 }
                 response.close();
             }
@@ -131,7 +132,9 @@ public class LoginActivity extends AppCompatActivity {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Toast.makeText(LoginActivity.this, message, Toast.LENGTH_SHORT).show();
+                Toast t = Toast.makeText(LoginActivity.this, message, Toast.LENGTH_SHORT);
+                t.setGravity(Gravity.FILL_HORIZONTAL, 0, 0);
+                t.show();
             }
         });
     }

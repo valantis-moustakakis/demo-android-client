@@ -3,6 +3,12 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/Users/valan/AndroidStudioProjects/thesis/app/src/main/res/drawable-v24/ic_launcher_foreground.xml" value="0.1695" />
+        <entry key="..\:/Users/valan/AndroidStudioProjects/thesis/app/src/main/res/drawable-v24/orange_dot.xml" value="0.1695" />
+        <entry key="..\:/Users/valan/AndroidStudioProjects/thesis/app/src/main/res/drawable-v24/yellow_dot.xml" value="0.1695" />
+        <entry key="..\:/Users/valan/AndroidStudioProjects/thesis/app/src/main/res/drawable/ic_baseline_brightness_1_24.xml" value="0.1695" />
+        <entry key="..\:/Users/valan/AndroidStudioProjects/thesis/app/src/main/res/drawable/ic_launcher_background.xml" value="0.1695" />
+        <entry key="..\:/Users/valan/AndroidStudioProjects/thesis/app/src/main/res/drawable/red_dot.xml" value="0.1685" />
         <entry key="..\:/Users/valan/AndroidStudioProjects/thesis/app/src/main/res/layout/activity_authentication.xml" value="0.358695652173913" />
         <entry key="..\:/Users/valan/AndroidStudioProjects/thesis/app/src/main/res/layout/activity_home.xml" value="0.29743589743589743" />
         <entry key="..\:/Users/valan/AndroidStudioProjects/thesis/app/src/main/res/layout/activity_login.xml" value="0.358695652173913" />

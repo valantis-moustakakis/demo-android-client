@@ -9,12 +9,15 @@ import static technology.moro.thesis.validators.CredentialsValidator.validatePas
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.gson.Gson;
 
 import java.io.IOException;
 
@@ -26,6 +29,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import technology.moro.thesis.R;
 import technology.moro.thesis.dtos.AuthenticationDTO;
+import technology.moro.thesis.dtos.AuthenticationResponseDTO;
 
 public class SignUpActivity extends AppCompatActivity {
 
@@ -98,11 +102,14 @@ public class SignUpActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onResponse(Call call, Response response) {
+            public void onResponse(Call call, Response response) throws IOException {
                 if (response.isSuccessful()) {
                     navigateToLogin();
                 } else {
-                    showToast("Sign Up failed");
+                    String stringAuthenticationResponse = response.body().string();
+                    Gson gson = new Gson();
+                    AuthenticationResponseDTO authenticationResponse = gson.fromJson(stringAuthenticationResponse, AuthenticationResponseDTO.class);
+                    showToast("Sign Up failed:\n" + authenticationResponse.getMessage());
                 }
                 response.close();
             }
@@ -120,7 +127,9 @@ public class SignUpActivity extends AppCompatActivity {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Toast.makeText(SignUpActivity.this, message, Toast.LENGTH_SHORT).show();
+                Toast t = Toast.makeText(SignUpActivity.this, message, Toast.LENGTH_SHORT);
+                t.setGravity(Gravity.FILL_HORIZONTAL, 0, 0);
+                t.show();
             }
         });
     }

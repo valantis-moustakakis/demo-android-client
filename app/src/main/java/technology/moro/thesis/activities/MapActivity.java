@@ -4,6 +4,7 @@ import static technology.moro.thesis.Constants.BASE_URL;
 import static technology.moro.thesis.Constants.DATE_FORMAT;
 import static technology.moro.thesis.Constants.EMAIL_KEY;
 import static technology.moro.thesis.Constants.GET_REPORTS_URL;
+import static technology.moro.thesis.Constants.GET_STREET_INFO_URL;
 import static technology.moro.thesis.Constants.JWT_TOKEN_KEY;
 import static technology.moro.thesis.Constants.PREF_NAME;
 
@@ -12,14 +13,16 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.drawable.Drawable;
 import android.location.Location;
-import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.view.Gravity;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -57,7 +60,7 @@ import okhttp3.Request;
 import okhttp3.Response;
 import technology.moro.thesis.dtos.Incident;
 import technology.moro.thesis.R;
-import technology.moro.thesis.dtos.Street;
+import technology.moro.thesis.dtos.StreetInfo;
 
 public class MapActivity extends AppCompatActivity implements OnMapReadyCallback {
 
@@ -103,9 +106,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 // Location permission granted, proceed with map initialization
                 initMap();
             } else {
-                // Location permission not granted, show a toast message and navigate back to HomeActivity
-                Toast.makeText(this, "Location permission not granted. Map cannot be used.",
-                        Toast.LENGTH_SHORT).show();
+                showToast("Location permission not granted. Map cannot be used.");
                 navigateToHomeActivity();
             }
         }
@@ -142,18 +143,16 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         // Start location updates
         startLocationUpdates();
 
-        // Perform the GET requests for incidents and streets
-        performGetIncidentsRequest();
-        // TODO: implements this
-//        performGetStreetRequest();
-    }
-
-    private void performGetIncidentsRequest() {
-        // Make a GET request to "http://localhost:8080/getIncidents"
-        // You can use libraries like OkHttp or Retrofit to perform the request
-
         String jwtToken = sharedPreferences.getString(JWT_TOKEN_KEY, "");
         String email = sharedPreferences.getString(EMAIL_KEY, "");
+        // Perform the GET requests for incidents and streets
+        performGetIncidentsRequest(email, jwtToken);
+        performGetStreetRequest(email, jwtToken);
+    }
+
+    private void performGetIncidentsRequest(String email, String jwtToken) {
+        // Make a GET request to "http://localhost:8080/getIncidents"
+        // You can use libraries like OkHttp or Retrofit to perform the request
 
         LatLngBounds boundingBox = getMapBoundingBox();
         double swlat = boundingBox.southwest.latitude;
@@ -161,15 +160,11 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         double nelat = boundingBox.northeast.latitude;
         double nelon = boundingBox.northeast.longitude;
 
-        StringBuilder strb = new StringBuilder("?")
-                .append("email=").append(email)
-                .append("&minLatitude=").append(swlat)
-                .append("&maxLatitude=").append(nelat)
-                .append("&minLongitude=").append(swlon)
-                .append("&maxLongitude=").append(nelon);
+        String params = "?email=" + email + "&minLatitude=" + swlat + "&maxLatitude=" + nelat +
+                "&minLongitude=" + swlon + "&maxLongitude=" + nelon;
 
         Request request = new Request.Builder()
-                .url(BASE_URL + GET_REPORTS_URL + strb)
+                .url(BASE_URL + GET_REPORTS_URL + params)
                 .addHeader("Authorization", "Bearer " + jwtToken)
                 .build();
 
@@ -177,8 +172,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             @Override
             public void onFailure(Call call, IOException e) {
                 e.printStackTrace();
-                runOnUiThread(() ->
-                        Toast.makeText(MapActivity.this, "Failed to fetch incidents", Toast.LENGTH_SHORT).show());
+                showToast("Failed to fetch incidents");
             }
 
             @Override
@@ -191,29 +185,32 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                     // Add markers to the map for each incident
                     runOnUiThread(() -> addIncidentMarkers(incidents));
                 } else {
-                    runOnUiThread(() ->
-                            Toast.makeText(MapActivity.this, "Failed to fetch incidents", Toast.LENGTH_SHORT).show());
+                    showToast("Failed to fetch incidents");
                 }
             }
         });
     }
 
-    private void performGetStreetRequest() {
-        // Make a GET request to "http://localhost:8080/getStreet"
-        // You can use libraries like OkHttp or Retrofit to perform the request
+    private void performGetStreetRequest(String email, String jwtToken) {
+        LatLngBounds boundingBox = getMapBoundingBox();
+        double swlat = boundingBox.southwest.latitude;
+        double swlon = boundingBox.southwest.longitude;
+        double nelat = boundingBox.northeast.latitude;
+        double nelon = boundingBox.northeast.longitude;
 
-        // Example using OkHttp
-        OkHttpClient client = new OkHttpClient();
+        String params = "?email=" + email + "&minLatitude=" + swlat + "&maxLatitude=" + nelat +
+                "&minLongitude=" + swlon + "&maxLongitude=" + nelon;
+
         Request request = new Request.Builder()
-                .url("http://localhost:8080/getStreet")
+                .url(BASE_URL + GET_STREET_INFO_URL + params)
+                .addHeader("Authorization", "Bearer " + jwtToken)
                 .build();
 
-        client.newCall(request).enqueue(new Callback() {
+        httpClient.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
                 e.printStackTrace();
-                runOnUiThread(() ->
-                        Toast.makeText(MapActivity.this, "Failed to fetch streets", Toast.LENGTH_SHORT).show());
+                showToast("Failed to fetch street info");
             }
 
             @Override
@@ -221,13 +218,12 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 if (response.isSuccessful()) {
                     String responseData = response.body().string();
                     // Parse the response data and extract the street information
-                    List<Street> streets = parseStreets(responseData);
+                    List<StreetInfo> streets = parseStreets(responseData);
 
                     // Add markers to the map for each street
                     runOnUiThread(() -> addStreetMarkers(streets));
                 } else {
-                    runOnUiThread(() ->
-                            Toast.makeText(MapActivity.this, "Failed to fetch streets", Toast.LENGTH_SHORT).show());
+                    showToast("Failed to fetch street info");
                 }
             }
         });
@@ -261,11 +257,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         return incidents;
     }
 
-    private List<Street> parseStreets(String responseData) {
-        // Parse the JSON response data and create a list of Street objects
-        // You can use libraries like Gson or JSONObject to parse the JSON data
-
-        List<Street> streets = new ArrayList<>();
+    private List<StreetInfo> parseStreets(String responseData) {
+        List<StreetInfo> streets = new ArrayList<>();
         try {
             JSONArray jsonArray = new JSONArray(responseData);
             for (int i = 0; i < jsonArray.length(); i++) {
@@ -274,9 +267,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 String severity = jsonStreet.getString("severity");
                 float latitude = (float) jsonStreet.getDouble("latitude");
                 float longitude = (float) jsonStreet.getDouble("longitude");
-                String lastRetrievalDate = jsonStreet.getString("lastRetrievalDate");
 
-                Street street = new Street(severity, latitude, longitude, lastRetrievalDate);
+                StreetInfo street = new StreetInfo(severity, latitude, longitude);
                 streets.add(street);
             }
         } catch (JSONException e) {
@@ -320,32 +312,50 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 //
 //    You can use the appropriate exclamation mark icons for each severity level.
 //    Make sure to place the icons in the res/drawable directory of your Android project.
-    private void addStreetMarkers(List<Street> streets) {
-        for (Street street : streets) {
+    private void addStreetMarkers(List<StreetInfo> streets) {
+
+        Bitmap redDot = getBitmap(R.drawable.red_dot);
+        Bitmap orangeDot = getBitmap(R.drawable.orange_dot);
+        Bitmap yellowDot = getBitmap(R.drawable.yellow_dot);
+
+//        Bitmap redDot = BitmapFactory.decodeResource(getResources(), R.drawable.red_dot);
+//        Bitmap orangeDot = BitmapFactory.decodeResource(getResources(), R.drawable.orange_dot);
+//        Bitmap yellowDot = BitmapFactory.decodeResource(getResources(), R.drawable.yellow_dot);
+
+        for (StreetInfo street : streets) {
             LatLng latLng = new LatLng(street.getLatitude(), street.getLongitude());
             MarkerOptions markerOptions = new MarkerOptions()
-                    .position(latLng)
-                    .title("Severity: " + street.getSeverity())
-                    .snippet("Last Retrieval Date: " + street.getLastRetrievalDate());
+                    .position(latLng);
 
             // Set marker icon based on severity
             switch (street.getSeverity()) {
-                case "High":
-                    markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
-//                    markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.exclamation_red));
+                case "HIGH":
+//                    markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
+                    markerOptions.icon(BitmapDescriptorFactory.fromBitmap(redDot));
                     break;
-                case "Medium":
-                    markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE));
-//                    markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.exclamation_orange));
+                case "MEDIUM":
+//                    markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE));
+                    markerOptions.icon(BitmapDescriptorFactory.fromBitmap(orangeDot));
                     break;
-                case "Low":
-                    markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW));
-//                    markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.exclamation_yellow));
+                case "LOW":
+//                    markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW));
+                    markerOptions.icon(BitmapDescriptorFactory.fromBitmap(yellowDot));
                     break;
             }
 
             mMap.addMarker(markerOptions);
         }
+    }
+
+    private Bitmap getBitmap(int drawableRes) {
+        Drawable drawable = getResources().getDrawable(drawableRes);
+        Canvas canvas = new Canvas();
+        Bitmap bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+        canvas.setBitmap(bitmap);
+        drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
+        drawable.draw(canvas);
+
+        return bitmap;
     }
 
     private boolean isLocationEnabled() {
@@ -414,5 +424,16 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     protected void onDestroy() {
         super.onDestroy();
         stopLocationUpdates();
+    }
+
+    private void showToast(final String message) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toast t = Toast.makeText(MapActivity.this, message, Toast.LENGTH_SHORT);
+                t.setGravity(Gravity.FILL_HORIZONTAL, 0, 0);
+                t.show();
+            }
+        });
     }
 }
