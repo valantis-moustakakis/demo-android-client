@@ -11,39 +11,46 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Severity" />
+        android:text="Severity"
+        android:layout_marginTop="20dp"
+        android:textSize="30sp" />
 
     <Spinner
         android:id="@+id/severity_spinner"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:entries="@array/severity_array"
-        android:layout_marginBottom="16dp" />
+        android:layout_marginBottom="16dp"
+        android:textSize="30sp" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Description" />
+        android:text="Description"
+        android:textSize="30sp" />
 
     <EditText
         android:id="@+id/description_edit_text"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:inputType="textMultiLine"
-        android:maxLines="5" />
+        android:maxLines="5"
+        android:textSize="30sp" />
 
     <Button
         android:id="@+id/report_button"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Report"
-        android:layout_marginTop="16dp" />
+        android:layout_marginTop="16dp"
+        android:textSize="30sp" />
 
     <fragment
         android:id="@+id/map_view_incident"
         android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_marginTop="16dp"
         tools:context=".activities.ReportIncidentActivity" />
 
 </LinearLayout>

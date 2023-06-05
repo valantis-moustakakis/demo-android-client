@@ -12,7 +12,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Elapsed Time: 00:00:00"
-        android:textSize="16sp" />
+        android:textSize="20sp" />
 
     <TextView
         android:id="@+id/accelerometerValuesTextView"
@@ -21,33 +21,34 @@
         android:layout_below="@id/elapsedTimeTextView"
         android:layout_marginTop="16dp"
         android:text="X: 0.0\nY: 0.0\nZ: 0.0"
-        android:textSize="16sp" />
+        android:textSize="20sp" />
 
     <Button
         android:id="@+id/start_button"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@id/accelerometerValuesTextView"
         android:layout_marginTop="16dp"
         android:text="Start"
-        android:enabled="false" />
+        android:enabled="false"
+        android:textSize="20sp" />
 
     <Button
         android:id="@+id/stop_button"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/accelerometerValuesTextView"
+        android:layout_below="@id/start_button"
         android:layout_marginTop="16dp"
-        android:layout_toRightOf="@id/start_button"
         android:text="Stop"
-        android:enabled="false" />
+        android:enabled="false"
+        android:textSize="20sp" />
 
     <fragment
         android:id="@+id/map_view_measurement"
         android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/start_button"
+        android:layout_below="@id/stop_button"
         android:layout_marginTop="16dp" />
 
 </RelativeLayout>
