@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    android:background="@color/background"
+    tools:context=".activities.MeasurementActivity">
+
+    <TextView
+        android:id="@+id/elapsedTimeTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Elapsed Time: 00:00:00"
+        android:textSize="16sp" />
+
+    <TextView
+        android:id="@+id/accelerometerValuesTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/elapsedTimeTextView"
+        android:layout_marginTop="16dp"
+        android:text="X: 0.0\nY: 0.0\nZ: 0.0"
+        android:textSize="16sp" />
+
+    <Button
+        android:id="@+id/start_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/accelerometerValuesTextView"
+        android:layout_marginTop="16dp"
+        android:text="Start"
+        android:enabled="false" />
+
+    <Button
+        android:id="@+id/stop_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/accelerometerValuesTextView"
+        android:layout_marginTop="16dp"
+        android:layout_toRightOf="@id/start_button"
+        android:text="Stop"
+        android:enabled="false" />
+
+    <fragment
+        android:id="@+id/map_view_measurement"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/start_button"
+        android:layout_marginTop="16dp" />
+
+</RelativeLayout>
