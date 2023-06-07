@@ -7,8 +7,6 @@ public class Constants {
     public static final String PREF_NAME = "MyAppPreferences";
     public static final String JWT_TOKEN_KEY = "thesis:jwtToken";
     public static final String EMAIL_KEY = "thesis:email";
-    public static final String IS_MEASURING_KEY = "thesis:isMeasuring";
-    public static final String ELAPSED_TIME_KEY = "thesis:elapsedTime";
 
     public static final String EMAIL_ADDRESS_REGEX = "^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,10}$";
 

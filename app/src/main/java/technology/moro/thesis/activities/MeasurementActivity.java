@@ -65,8 +65,6 @@ import technology.moro.thesis.dtos.TransmissionDataDTO;
 public class MeasurementActivity extends AppCompatActivity implements OnMapReadyCallback, SensorEventListener {
     private static final String TAG = "!===== MeasurementActivity =====!";
 
-    private SharedPreferences sharedPreferences;
-
     private static final int REQUEST_LOCATION_PERMISSION = 1;
     private GoogleMap map;
     private FusedLocationProviderClient fusedLocationClient;
@@ -104,8 +102,6 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
         Log.v(TAG, "======================================= MeasurementActivity ===============================================================");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_measurement);
-
-        sharedPreferences = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
 
         // Check if location permission is granted
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -284,6 +280,7 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
         Log.v(TAG, "Starting accelerometer updates...");
         accelerometerHandler = new Handler();
         accelerometerHandler.post(accelerometerRunnable);
+        sensorManager.registerListener(this, accelerometerSensor, SensorManager.SENSOR_DELAY_NORMAL);
         Log.v(TAG, "Accelerometer updates started!");
     }
 
@@ -292,6 +289,7 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
         Log.v(TAG, "Stopping accelerometer updates...");
         if (accelerometerHandler != null) {
             accelerometerHandler.removeCallbacks(accelerometerRunnable);
+            sensorManager.unregisterListener(this);
             Log.v(TAG, "Accelerometer updates stopped!");
         }
     }
@@ -422,18 +420,6 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        sensorManager.registerListener(this, accelerometerSensor, SensorManager.SENSOR_DELAY_NORMAL);
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        sensorManager.unregisterListener(this);
-    }
-
-    @Override
     public void onAccuracyChanged(Sensor sensor, int i) {
 
     }
@@ -451,13 +437,9 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
     private void sendNotification() {
         Log.v(TAG, "Sending notification...");
         // Create an intent for opening the MainActivity when the notification is clicked
-        Intent intent = new Intent(this, MeasurementActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-
-        // Create a back stack of activities
-        TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
-        stackBuilder.addNextIntentWithParentStack(intent);
-        PendingIntent pendingIntent = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        Intent intent = getPackageManager().getLaunchIntentForPackage(getPackageName());
+        PendingIntent pendingIntent = PendingIntent.getActivity(getApplicationContext(), 0,
+                intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         // Build the notification
         Notification notification = new Notification.Builder(this, CHANNEL_ID)
@@ -473,17 +455,6 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
         notificationManager.notify(0, notification);
         Log.v(TAG, "Notification sent!");
     }
-
-    // TODO: check this in order for the activity to continue from previous state after notification
-//    private void saveToSharedPreferences(String key, Object value) {
-//        SharedPreferences.Editor editor = sharedPreferences.edit();
-//        if (value instanceof String) {
-//            editor.putString(key, value.toString());
-//        } else if (value instanceof Integer) {
-//            editor.putInt(key, (int) value);
-//        }
-//        editor.apply();
-//    }
 
     private void showToast(final String message) {
         runOnUiThread(new Runnable() {
