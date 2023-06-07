@@ -149,6 +149,8 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
         accelerometerValuesTextView = findViewById(R.id.accelerometerValuesTextView);
         startButton = findViewById(R.id.start_button);
         stopButton = findViewById(R.id.stop_button);
+        startButton.setEnabled(false);
+        stopButton.setEnabled(false);
 
         startButton.setOnClickListener(new View.OnClickListener() {
             @Override

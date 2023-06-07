@@ -29,7 +29,6 @@
         android:layout_below="@id/accelerometerValuesTextView"
         android:layout_marginTop="16dp"
         android:text="Start"
-        android:enabled="false"
         android:textSize="20sp" />
 
     <Button
@@ -39,7 +38,6 @@
         android:layout_below="@id/start_button"
         android:layout_marginTop="16dp"
         android:text="Stop"
-        android:enabled="false"
         android:textSize="20sp" />
 
     <fragment
