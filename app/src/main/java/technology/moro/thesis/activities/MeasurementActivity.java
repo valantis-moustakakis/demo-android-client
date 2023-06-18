@@ -1,5 +1,8 @@
 package technology.moro.thesis.activities;
 
+import static technology.moro.thesis.Constants.EMAIL_KEY;
+import static technology.moro.thesis.Constants.PREF_NAME;
+
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Notification;
@@ -8,6 +11,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.hardware.Sensor;
@@ -61,6 +65,9 @@ import technology.moro.thesis.dtos.TransmissionDataDTO;
 public class MeasurementActivity extends AppCompatActivity implements OnMapReadyCallback, SensorEventListener {
     private static final String TAG = "!===== MeasurementActivity =====!";
 
+    private SharedPreferences sharedPreferences;
+    private String email;
+
     private static final int REQUEST_LOCATION_PERMISSION = 1;
     private GoogleMap map;
     private FusedLocationProviderClient fusedLocationClient;
@@ -98,6 +105,9 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
         Log.v(TAG, "======================================= MeasurementActivity ===============================================================");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_measurement);
+
+        sharedPreferences = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
+        email = sharedPreferences.getString(EMAIL_KEY, "");
 
         // Check if location permission is granted
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -242,7 +252,7 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
             float y = accelerometerValues[1];
             float z = accelerometerValues[2];
             accelerometerValuesTextView.setText("X: " + x + "\nY: " + y + "\nZ: " + x);
-            data.add(new TransmissionDataDTO(System.currentTimeMillis(), (float) currentLocation.longitude, (float) currentLocation.latitude, x, y, z));
+            data.add(new TransmissionDataDTO(System.currentTimeMillis(), email, (float) currentLocation.longitude, (float) currentLocation.latitude, x, y, z));
             if (isMeasuring) {
                 accelerometerHandler.postDelayed(this, ACCELEROMETER_UPDATE_INTERVAL);
             }

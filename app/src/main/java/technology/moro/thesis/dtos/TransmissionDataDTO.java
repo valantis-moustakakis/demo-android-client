@@ -6,14 +6,16 @@ import com.google.gson.Gson;
 
 public class TransmissionDataDTO {
     private long ts;
+    private String user;
     private float lon;
     private float lat;
     private float x;
     private float y;
     private float z;
 
-    public TransmissionDataDTO(long timestamp, float longitude, float latitude, float x, float y, float z) {
+    public TransmissionDataDTO(long timestamp, String user, float longitude, float latitude, float x, float y, float z) {
         this.ts = timestamp;
+        this.user = user;
         this.lon = longitude;
         this.lat = latitude;
         this.x = x;
@@ -27,6 +29,14 @@ public class TransmissionDataDTO {
 
     public void setTs(long ts) {
         this.ts = ts;
+    }
+
+    public String getUser() {
+        return user;
+    }
+
+    public void setUser(String user) {
+        this.user = user;
     }
 
     public float getLon() {
