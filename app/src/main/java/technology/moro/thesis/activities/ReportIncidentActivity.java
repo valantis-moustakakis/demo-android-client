@@ -14,7 +14,6 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -49,8 +48,10 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import technology.moro.thesis.R;
 import technology.moro.thesis.dtos.ReportDTO;
+import timber.log.Timber;
 
 public class ReportIncidentActivity extends AppCompatActivity implements OnMapReadyCallback {
+    private static final String TAG = "!===== ReportIncidentActivity =====!";
 
     private static final int REQUEST_LOCATION_PERMISSION = 1;
 
@@ -126,7 +127,7 @@ public class ReportIncidentActivity extends AppCompatActivity implements OnMapRe
         httpClient.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                Log.e("ReportIncidentActivity", "Request failed: " + e.getMessage());
+                Timber.tag(TAG).e("Request failed: %s", e.getMessage());
                 showToast("Failed to report incident");
             }
 

@@ -23,7 +23,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
@@ -61,6 +60,7 @@ import info.mqtt.android.service.Ack;
 import info.mqtt.android.service.MqttAndroidClient;
 import technology.moro.thesis.R;
 import technology.moro.thesis.dtos.TransmissionDataDTO;
+import timber.log.Timber;
 
 public class MeasurementActivity extends AppCompatActivity implements OnMapReadyCallback, SensorEventListener {
     private static final String TAG = "!===== MeasurementActivity =====!";
@@ -96,13 +96,12 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
 
     private static final String CHANNEL_ID = "measurement_notification_channel";
     private static final String CHANNEL_NAME = "Measurement Notification Channel";
-    private static final int NOTIFICATION_THRESHOLD = 10; // value in seconds -> 1800 = 30 minutes
+    private static final int NOTIFICATION_THRESHOLD = 1800; // value in seconds -> 1800 = 30 minutes
     private static int notificationToBeSent;
 
     @SuppressLint("LongLogTag")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.v(TAG, "======================================= MeasurementActivity ===============================================================");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_measurement);
 
@@ -174,19 +173,19 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
 
     @SuppressLint("LongLogTag")
     private void startMeasurement() {
-        Log.v(TAG, "Starting measurements...");
+        Timber.tag(TAG).v("Starting measurements...");
         isMeasuring = true;
         startButton.setEnabled(false);
         stopButton.setEnabled(true);
         startTimerUpdates();
         startAccelerometerUpdates();
         startMessageSending();
-        Log.v(TAG, "Measurements started!");
+        Timber.tag(TAG).v("Measurements started!");
     }
 
     @SuppressLint("LongLogTag")
     private void stopMeasurement() {
-        Log.v(TAG, "Stopping measurements...");
+        Timber.tag(TAG).v("Stopping measurements...");
         isMeasuring = false;
         elapsedSeconds = 0;
         data.clear();
@@ -198,23 +197,23 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
         stopAccelerometerUpdates();
         stopMessageSending();
         resetValues();
-        Log.v(TAG, "Measurements stopped!");
+        Timber.tag(TAG).v("Measurements stopped!");
     }
 
     @SuppressLint("LongLogTag")
     private void startMessageSending() {
-        Log.v(TAG, "Starting messages transmission...");
+        Timber.tag(TAG).v("Starting messages transmission...");
         messageHandler = new Handler();
         messageHandler.postDelayed(messageRunnable, MESSAGE_SEND_INTERVAL);
-        Log.v(TAG, "Messages transmission started!");
+        Timber.tag(TAG).v("Messages transmission started!");
     }
 
     @SuppressLint("LongLogTag")
     private void stopMessageSending() {
-        Log.v(TAG, "Stopping messages transmission...");
+        Timber.tag(TAG).v("Stopping messages transmission...");
         if (messageHandler != null) {
             messageHandler.removeCallbacks(messageRunnable);
-            Log.v(TAG, "Messages transmission stopped!");
+            Timber.tag(TAG).v("Messages transmission stopped!");
         }
     }
 
@@ -233,10 +232,10 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
 
     @SuppressLint("LongLogTag")
     private void publishMqttMessage(String payload) {
-        Log.v(TAG, "Publishing mqtt message to broker...");
+        Timber.tag(TAG).v("Publishing mqtt message to broker...");
         String topic = "measurements";
         mqttClient.publish(topic, payload.getBytes(), 1, true);
-        Log.v(TAG, "Mqtt message published!");
+        Timber.tag(TAG).v("Mqtt message published!");
     }
 
     private void resetValues() {
@@ -283,50 +282,50 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
 
     @SuppressLint("LongLogTag")
     private void startAccelerometerUpdates() {
-        Log.v(TAG, "Starting accelerometer updates...");
+        Timber.tag(TAG).v("Starting accelerometer updates...");
         accelerometerHandler = new Handler();
         accelerometerHandler.post(accelerometerRunnable);
         sensorManager.registerListener(this, accelerometerSensor, SensorManager.SENSOR_DELAY_NORMAL);
-        Log.v(TAG, "Accelerometer updates started!");
+        Timber.tag(TAG).v("Accelerometer updates started!");
     }
 
     @SuppressLint("LongLogTag")
     private void stopAccelerometerUpdates() {
-        Log.v(TAG, "Stopping accelerometer updates...");
+        Timber.tag(TAG).v("Stopping accelerometer updates...");
         if (accelerometerHandler != null) {
             accelerometerHandler.removeCallbacks(accelerometerRunnable);
             sensorManager.unregisterListener(this);
-            Log.v(TAG, "Accelerometer updates stopped!");
+            Timber.tag(TAG).v("Accelerometer updates stopped!");
         }
     }
 
     @SuppressLint("LongLogTag")
     private void startTimerUpdates() {
-        Log.v(TAG, "Starting accelerometer updates...");
+        Timber.tag(TAG).v("Starting accelerometer updates...");
         elapsedTimeHandler = new Handler();
         elapsedTimeHandler.post(timerRunnable);
-        Log.v(TAG, "Accelerometer updates started!");
+        Timber.tag(TAG).v("Accelerometer updates started!");
     }
 
     @SuppressLint("LongLogTag")
     private void stopTimerUpdates() {
-        Log.v(TAG, "Stopping timer updates...");
+        Timber.tag(TAG).v("Stopping timer updates...");
         if (elapsedTimeHandler != null) {
             elapsedTimeHandler.removeCallbacks(timerRunnable);
-            Log.v(TAG, "Timer updates stopped!");
+            Timber.tag(TAG).v("Timer updates stopped!");
         }
     }
 
     @SuppressLint("LongLogTag")
     private void stopLocationUpdates() {
-        Log.v(TAG, "Stopping location updates...");
+        Timber.tag(TAG).v("Stopping location updates...");
         fusedLocationClient.removeLocationUpdates(locationCallback);
-        Log.v(TAG, "Location updates stopped!");
+        Timber.tag(TAG).v("Location updates stopped!");
     }
 
     @SuppressLint("LongLogTag")
     private void connectToMqttBroker() {
-        Log.v(TAG, "Trying to connect to mqtt broker...");
+        Timber.tag(TAG).v("Trying to connect to mqtt broker...");
         String mqttBrokerUrl = "ssl://f0cdbc9159594b919d68036f1fc85241.s2.eu.hivemq.cloud:8883";
         String username = "UPMFinalThesis2023";
         String password = "UPMFinalThesis2023";
@@ -337,25 +336,25 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
             @Override
             public void connectComplete(boolean reconnect, String serverURI) {
                 if (reconnect) {
-                    Log.v(TAG, "Reconnected");
+                    Timber.tag(TAG).v("Reconnected");
                 } else {
-                    Log.v(TAG, "Connected");
+                    Timber.tag(TAG).v("Connected");
                 }
             }
 
             @Override
             public void connectionLost(Throwable cause) {
-                Log.v(TAG, "The mqtt connection lost!");
+                Timber.tag(TAG).v("The mqtt connection lost!");
             }
 
             @Override
             public void messageArrived(String topic, MqttMessage message) {
-                Log.v(TAG, "Mqtt message arrived!");
+                Timber.tag(TAG).v("Mqtt message arrived!");
             }
 
             @Override
             public void deliveryComplete(IMqttDeliveryToken token) {
-                Log.v(TAG, "Mqtt message delivered!");
+                Timber.tag(TAG).v("Mqtt message delivered!");
             }
         });
 
@@ -367,12 +366,12 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
         mqttClient.connect(connectOptions, null, new IMqttActionListener() {
             @Override
             public void onSuccess(IMqttToken asyncActionToken) {
-                Log.v(TAG, "Connect to mqtt broker was successful!");
+                Timber.tag(TAG).v("Connect to mqtt broker was successful!");
             }
 
             @Override
             public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                Log.v(TAG, "Connect to mqtt broker failed!");
+                Timber.tag(TAG).v("Connect to mqtt broker failed!");
                 exception.printStackTrace();
             }
         });
@@ -441,8 +440,7 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
     }
 
     private void sendNotification() {
-        Log.v(TAG, "Sending notification...");
-        // Create an intent for opening the MainActivity when the notification is clicked
+        Timber.tag(TAG).v("Sending notification...");
         Intent intent = getPackageManager().getLaunchIntentForPackage(getPackageName());
         PendingIntent pendingIntent = PendingIntent.getActivity(getApplicationContext(), 0,
                 intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
@@ -459,7 +457,7 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
         // Send the notification
         NotificationManager notificationManager = getSystemService(NotificationManager.class);
         notificationManager.notify(0, notification);
-        Log.v(TAG, "Notification sent!");
+        Timber.tag(TAG).v("Notification sent!");
     }
 
     private void showToast(final String message) {

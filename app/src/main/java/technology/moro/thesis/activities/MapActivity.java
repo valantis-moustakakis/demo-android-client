@@ -233,8 +233,6 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
     private List<Incident> parseIncidents(String responseData) {
         // Parse the JSON response data and create a list of Incident objects
-        // You can use libraries like Gson or JSONObject to parse the JSON data
-
         List<Incident> incidents = new ArrayList<>();
         try {
             JSONArray jsonArray = new JSONArray(responseData);
@@ -306,14 +304,6 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         }
     }
 
-//    For the marker icons, you can create three drawables in the drawable folder with the following names:
-//
-//    exclamation_red.png
-//    exclamation_orange.png
-//    exclamation_yellow.png
-//
-//    You can use the appropriate exclamation mark icons for each severity level.
-//    Make sure to place the icons in the res/drawable directory of your Android project.
     private void addStreetMarkers(List<StreetInfo> streets) {
 
         Bitmap redDot = getBitmap(R.drawable.red_dot);
@@ -363,7 +353,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         LocationRequest locationRequest = LocationRequest.create();
-//        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 //        locationRequest.setInterval(2000); // Update every 2 seconds
 
         locationCallback = new LocationCallback() {
@@ -434,9 +424,6 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
     @Override
     public void onCameraChange(CameraPosition cameraPosition) {
-        // Execute your code here
-        // This method will be called every time the user changes the map (e.g., zooms, pans, etc.)
-        // You can access the updated camera position using cameraPosition parameter
         mMap.clear();
         performGetIncidentsRequest(email, jwtToken);
         performGetStreetRequest(email, jwtToken);
