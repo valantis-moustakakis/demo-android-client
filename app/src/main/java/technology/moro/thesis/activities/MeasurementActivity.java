@@ -250,7 +250,7 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
             float x = accelerometerValues[0];
             float y = accelerometerValues[1];
             float z = accelerometerValues[2];
-            accelerometerValuesTextView.setText("X: " + x + "\nY: " + y + "\nZ: " + x);
+            accelerometerValuesTextView.setText("X: " + x + "\nY: " + y + "\nZ: " + z);
             data.add(new TransmissionDataDTO(System.currentTimeMillis(), email, (float) currentLocation.longitude, (float) currentLocation.latitude, x, y, z));
             if (isMeasuring) {
                 accelerometerHandler.postDelayed(this, ACCELEROMETER_UPDATE_INTERVAL);
