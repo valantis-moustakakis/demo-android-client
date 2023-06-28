@@ -22,6 +22,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.Gravity;
+import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -43,6 +45,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.VisibleRegion;
 
@@ -192,6 +195,34 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         mMap.setOnCameraChangeListener(this);
+        // Create a custom info window adapter
+        mMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
+            @Override
+            public View getInfoWindow(Marker marker) {
+                return null; // Return null to use the default info window
+            }
+
+            @Override
+            public View getInfoContents(Marker marker) {
+                // Inflate the custom info window layout
+                View view = getLayoutInflater().inflate(R.layout.custom_info_window, null);
+
+                // Find the views in the custom info window layout
+                TextView titleTextView = view.findViewById(R.id.titleTextView);
+                TextView snippetTextView = view.findViewById(R.id.snippetTextView);
+
+                // Set the title and snippet text
+                titleTextView.setText(marker.getTitle());
+                snippetTextView.setText(marker.getSnippet());
+
+                // Measure the view to determine its dimensions
+                int widthMeasureSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+                int heightMeasureSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+                view.measure(widthMeasureSpec, heightMeasureSpec);
+
+                return view;
+            }
+        });
 
         // Check if location is enabled on the device
         boolean isLocationEnabled = isLocationEnabled();
@@ -489,8 +520,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     }
 
     @Override
-    public void onCameraChange(CameraPosition cameraPosition) {
-        mMap.clear();
+    public void onCameraChange(@NonNull CameraPosition cameraPosition) {
         performGetIncidentsRequest(email, jwtToken);
         performGetStreetRequest(email, jwtToken);
     }

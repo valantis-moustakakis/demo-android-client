@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="form_icon">25sp</dimen>
+    <dimen name="form_icon_padding">25sp</dimen>
+</resources>

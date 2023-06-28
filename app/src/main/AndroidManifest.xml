@@ -23,13 +23,27 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".activities.HomeActivity" />
-        <activity android:name=".activities.AuthenticationActivity" />
-        <activity android:name=".activities.LoginActivity" />
-        <activity android:name=".activities.SignUpActivity" />
-        <activity android:name=".activities.MapActivity" />
-        <activity android:name=".activities.MeasurementActivity" />
-        <activity android:name=".activities.ReportIncidentActivity" />
+        <activity
+            android:name=".activities.HomeActivity"
+            android:label="Home" />
+        <activity
+            android:name=".activities.AuthenticationActivity"
+            android:label="Home" />
+        <activity
+            android:name=".activities.LoginActivity"
+            android:label="Login" />
+        <activity
+            android:name=".activities.SignUpActivity"
+            android:label="Register" />
+        <activity
+            android:name=".activities.MapActivity"
+            android:label="Results Display" />
+        <activity
+            android:name=".activities.MeasurementActivity"
+            android:label="Pavement Surface Monitoring" />
+        <activity
+            android:name=".activities.ReportIncidentActivity"
+            android:label="Incident Details" />
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"

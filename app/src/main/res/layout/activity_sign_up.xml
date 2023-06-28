@@ -12,6 +12,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Email"
+        android:drawableLeft="@drawable/ic_email_sized"
+        android:drawablePadding="@dimen/form_icon_padding"
         android:textSize="30sp" />
 
     <EditText
@@ -19,12 +21,15 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:inputType="textEmailAddress"
-        android:textSize="20sp" />
+        android:textSize="20sp"
+        android:layout_marginBottom="50dp" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Password"
+        android:drawableLeft="@drawable/ic_password_sized"
+        android:drawablePadding="@dimen/form_icon_padding"
         android:layout_marginTop="20dp"
         android:textSize="30sp" />
 
@@ -33,12 +38,15 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:inputType="textPassword"
-        android:textSize="20sp" />
+        android:textSize="20sp"
+        android:layout_marginBottom="50dp" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Confirm Password"
+        android:drawableLeft="@drawable/ic_password_sized"
+        android:drawablePadding="@dimen/form_icon_padding"
         android:layout_marginTop="20dp"
         android:textSize="30sp" />
 
@@ -47,7 +55,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:inputType="textPassword"
-        android:textSize="20sp" />
+        android:textSize="20sp"
+        android:layout_marginBottom="50dp" />
 
     <Button
         android:id="@+id/sign_up_button"

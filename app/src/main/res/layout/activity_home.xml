@@ -12,8 +12,8 @@
         android:id="@+id/measurement_button"
         android:layout_width="match_parent"
         android:layout_height="100dp"
-        android:text="Start/Stop Measurement"
-        android:layout_marginBottom="16dp"
+        android:text="Monitor Pavement Surface"
+        android:layout_marginBottom="50dp"
         android:textSize="30sp" />
 
     <Button
@@ -21,7 +21,7 @@
         android:layout_width="match_parent"
         android:layout_height="100dp"
         android:text="Report an Incident"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="50dp"
         android:textSize="30sp" />
 
     <Button
@@ -29,7 +29,7 @@
         android:layout_width="match_parent"
         android:layout_height="100dp"
         android:text="Map"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="50dp"
         android:textSize="30sp" />
 
     <Button

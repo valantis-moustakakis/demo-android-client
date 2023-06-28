@@ -12,6 +12,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Email"
+        android:drawableStart="@drawable/ic_email_sized"
+        android:drawablePadding="@dimen/form_icon_padding"
         android:textSize="30sp" />
 
     <EditText
@@ -19,12 +21,15 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:inputType="textEmailAddress"
-        android:textSize="20sp" />
+        android:textSize="20sp"
+        android:layout_marginBottom="50dp" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Password"
+        android:drawableStart="@drawable/ic_password_sized"
+        android:drawablePadding="@dimen/form_icon_padding"
         android:layout_marginTop="30dp"
         android:textSize="30sp" />
 
@@ -33,7 +38,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:inputType="textPassword"
-        android:textSize="20sp" />
+        android:textSize="20sp"
+        android:layout_marginBottom="50dp" />
 
     <Button
         android:id="@+id/login_button"

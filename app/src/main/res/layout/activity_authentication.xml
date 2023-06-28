@@ -8,6 +8,17 @@
     android:padding="16dp"
     tools:context=".activities.AuthenticationActivity">
 
+    <TextView
+        android:id="@+id/welcomeTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Welcome to Ramp"
+        android:fontFamily="casual"
+        android:textStyle="bold"
+        android:textAlignment="center"
+        android:layout_marginBottom="50dp"
+        android:textSize="50sp" />
+
     <Button
         android:id="@+id/login_button"
         android:layout_width="match_parent"
@@ -20,7 +31,7 @@
         android:layout_width="match_parent"
         android:layout_height="100dp"
         android:text="Sign Up"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="50dp"
         android:textSize="30sp" />
 
 </LinearLayout>
