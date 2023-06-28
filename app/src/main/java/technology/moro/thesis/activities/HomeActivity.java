@@ -16,11 +16,6 @@ import technology.moro.thesis.R;
 
 public class HomeActivity extends AppCompatActivity {
 
-    private Button measurementButton;
-    private Button reportButton;
-    private Button mapButton;
-    private Button logoutButton;
-
     private SharedPreferences sharedPreferences;
 
     @Override
@@ -28,10 +23,10 @@ public class HomeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
-        measurementButton = findViewById(R.id.measurement_button);
-        reportButton = findViewById(R.id.report_button);
-        mapButton = findViewById(R.id.map_button);
-        logoutButton = findViewById(R.id.logout_button);
+        Button measurementButton = findViewById(R.id.measurement_button);
+        Button reportButton = findViewById(R.id.report_button);
+        Button mapButton = findViewById(R.id.map_button);
+        Button logoutButton = findViewById(R.id.logout_button);
 
         sharedPreferences = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
 

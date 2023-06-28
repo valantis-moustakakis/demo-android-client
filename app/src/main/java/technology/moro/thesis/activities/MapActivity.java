@@ -10,6 +10,7 @@ import static technology.moro.thesis.Constants.PREF_NAME;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -17,12 +18,14 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
+import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.Gravity;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -89,36 +92,97 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         httpClient = new OkHttpClient();
 
         // Check if location permission is granted
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-            // Permission is not granted, request it
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    REQUEST_LOCATION_PERMISSION);
-        } else {
-            // Permission is already granted, proceed with map initialization
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             initMap();
+        } else {
+            // Request location permission from the user
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION_PERMISSION);
         }
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
         if (requestCode == REQUEST_LOCATION_PERMISSION) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Location permission granted, proceed with map initialization
+                // Location permission granted
                 initMap();
             } else {
-                showToast("Location permission not granted. Map cannot be used.");
-                navigateToHomeActivity();
+                // Location permission denied
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
+                    // Show an explanation to the user and request again if needed
+                    showPermissionRationaleDialog();
+                } else {
+                    // User has permanently denied the permission, navigate back to the previous activity or exit the app
+                    showPermissionDeniedDialog();
+                }
             }
         }
     }
 
+    // Show a dialog explaining why the location permission is required
+    private void showPermissionRationaleDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Location Permission")
+                .setMessage("This app requires access to your location to provide accurate results.")
+                .setPositiveButton("Grant Permission", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        // Request location permission again
+                        ActivityCompat.requestPermissions(MapActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION_PERMISSION);
+                    }
+                })
+                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        // User has denied the permission, navigate back to the previous activity or exit the app
+                        navigateToPreviousActivity();
+                    }
+                })
+                .setCancelable(false)
+                .show();
+    }
+
+    // Show a dialog informing the user about denied permission and providing an option to open app settings
+    private void showPermissionDeniedDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Permission Denied")
+                .setMessage("You have denied location permission. To enable this feature, please grant the permission from the app settings.")
+                .setPositiveButton("Open Settings", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        openAppSettings();
+                    }
+                })
+                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        // User has denied the permission, navigate back to the previous activity or exit the app
+                        navigateToPreviousActivity();
+                    }
+                })
+                .setCancelable(false)
+                .show();
+    }
+
+    // Open the app settings screen
+    private void openAppSettings() {
+        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+        Uri uri = Uri.fromParts("package", getPackageName(), null);
+        intent.setData(uri);
+        startActivity(intent);
+    }
+
+    // Navigate to the previous activity or exit the app
+    private void navigateToPreviousActivity() {
+        // Here, you can navigate back to the previous activity or close the app as per your requirement
+        // For example, you can use the finish() method to close the current activity
+        finish();
+    }
+
     private void initMap() {
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map_view);
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map_view);
         if (mapFragment != null) {
             mapFragment.getMapAsync(this);
         }
@@ -305,10 +369,10 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     }
 
     private void addStreetMarkers(List<StreetInfo> streets) {
-
         Bitmap redDot = getBitmap(R.drawable.red_dot);
         Bitmap orangeDot = getBitmap(R.drawable.orange_dot);
         Bitmap yellowDot = getBitmap(R.drawable.yellow_dot);
+        Bitmap greenDot = getBitmap(R.drawable.green_dot);
 
         for (StreetInfo street : streets) {
             LatLng latLng = new LatLng(street.getLatitude(), street.getLongitude());
@@ -326,12 +390,16 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 case "LOW":
                     markerOptions.icon(BitmapDescriptorFactory.fromBitmap(yellowDot));
                     break;
+                case "NO_SEVERITY":
+                    markerOptions.icon(BitmapDescriptorFactory.fromBitmap(greenDot));
+                    break;
             }
 
             mMap.addMarker(markerOptions);
         }
     }
 
+    @SuppressLint("UseCompatLoadingForDrawables")
     private Bitmap getBitmap(int drawableRes) {
         Drawable drawable = getResources().getDrawable(drawableRes);
         Canvas canvas = new Canvas();
@@ -344,8 +412,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     }
 
     private boolean isLocationEnabled() {
-        int mode = Settings.Secure.getInt(getContentResolver(), Settings.Secure.LOCATION_MODE,
-                Settings.Secure.LOCATION_MODE_OFF);
+        int mode = Settings.Secure.getInt(getContentResolver(), Settings.Secure.LOCATION_MODE, Settings.Secure.LOCATION_MODE_OFF);
         return (mode != Settings.Secure.LOCATION_MODE_OFF);
     }
 
@@ -354,7 +421,6 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
         LocationRequest locationRequest = LocationRequest.create();
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-//        locationRequest.setInterval(2000); // Update every 2 seconds
 
         locationCallback = new LocationCallback() {
             @Override

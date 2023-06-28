@@ -8,10 +8,12 @@ import static technology.moro.thesis.Constants.PREF_NAME;
 import static technology.moro.thesis.Constants.REPORT_URL;
 
 import android.Manifest;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.Gravity;
@@ -23,6 +25,7 @@ import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -88,6 +91,8 @@ public class ReportIncidentActivity extends AppCompatActivity implements OnMapRe
         severityAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         severitySpinner.setAdapter(severityAdapter);
 
+        reportButton.setEnabled(false);
+
         reportButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -99,16 +104,72 @@ public class ReportIncidentActivity extends AppCompatActivity implements OnMapRe
         });
 
         // Check if location permission is granted
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-            // Permission is not granted, request it
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    REQUEST_LOCATION_PERMISSION);
-        } else {
-            // Permission is already granted, proceed with map initialization
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             initMap();
+        } else {
+            // Request location permission from the user
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION_PERMISSION);
         }
+    }
+
+    // Show a dialog explaining why the location permission is required
+    private void showPermissionRationaleDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Location Permission")
+                .setMessage("This app requires access to your location to provide accurate results.")
+                .setPositiveButton("Grant Permission", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        // Request location permission again
+                        ActivityCompat.requestPermissions(ReportIncidentActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION_PERMISSION);
+                    }
+                })
+                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        // User has denied the permission, navigate back to the previous activity or exit the app
+                        navigateToPreviousActivity();
+                    }
+                })
+                .setCancelable(false)
+                .show();
+    }
+
+    // Show a dialog informing the user about denied permission and providing an option to open app settings
+    private void showPermissionDeniedDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Permission Denied")
+                .setMessage("You have denied location permission. To enable this feature, please grant the permission from the app settings.")
+                .setPositiveButton("Open Settings", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        openAppSettings();
+                    }
+                })
+                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        // User has denied the permission, navigate back to the previous activity or exit the app
+                        navigateToPreviousActivity();
+                    }
+                })
+                .setCancelable(false)
+                .show();
+    }
+
+    // Open the app settings screen
+    private void openAppSettings() {
+        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+        Uri uri = Uri.fromParts("package", getPackageName(), null);
+        intent.setData(uri);
+        startActivity(intent);
+    }
+
+    // Navigate to the previous activity or exit the app
+    private void navigateToPreviousActivity() {
+        // Here, you can navigate back to the previous activity or close the app as per your requirement
+        // For example, you can use the finish() method to close the current activity
+        finish();
     }
 
     private void reportIncident(String severity, String description) {
@@ -165,15 +226,19 @@ public class ReportIncidentActivity extends AppCompatActivity implements OnMapRe
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
         if (requestCode == REQUEST_LOCATION_PERMISSION) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Location permission granted, proceed with map initialization
                 initMap();
             } else {
-                // Location permission not granted, show a toast message and navigate back to HomeActivity
-                Toast.makeText(this, "Location permission not granted. Map cannot be used.",
-                        Toast.LENGTH_SHORT).show();
-                navigateToHomeActivity();
+                // Location permission denied
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
+                    // Show an explanation to the user and request again if needed
+                    showPermissionRationaleDialog();
+                } else {
+                    // User has permanently denied the permission, navigate back to the previous activity or exit the app
+                    showPermissionDeniedDialog();
+                }
             }
         }
     }
@@ -225,6 +290,7 @@ public class ReportIncidentActivity extends AppCompatActivity implements OnMapRe
                 for (Location location : locationResult.getLocations()) {
                     // Update the map camera to the user's current location
                     userLocation = new LatLng(location.getLatitude(), location.getLongitude());
+                    reportButton.setEnabled(true);
                     mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 15f));
                 }
             }

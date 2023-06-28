@@ -16,7 +16,6 @@ import technology.moro.thesis.R;
 
 public class MainActivity extends AppCompatActivity {
 
-    private ProgressBar progressBar;
     private SharedPreferences sharedPreferences;
 
     @Override
@@ -25,7 +24,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         // Show loading icon
-        progressBar = findViewById(R.id.progress_bar);
+        ProgressBar progressBar = findViewById(R.id.progress_bar);
         progressBar.setVisibility(View.VISIBLE);
 
         sharedPreferences = getSharedPreferences(PREF_NAME, MODE_PRIVATE);

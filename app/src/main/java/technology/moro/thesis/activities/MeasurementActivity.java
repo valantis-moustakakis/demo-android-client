@@ -1,7 +1,9 @@
 package technology.moro.thesis.activities;
 
+import static com.google.android.gms.location.LocationRequest.PRIORITY_HIGH_ACCURACY;
 import static technology.moro.thesis.Constants.EMAIL_KEY;
 import static technology.moro.thesis.Constants.PREF_NAME;
+import static technology.moro.thesis.Constants.REQUEST_LOCATION_PERMISSION;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -9,8 +11,11 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -19,9 +24,9 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.location.Location;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Looper;
 import android.provider.Settings;
 import android.view.Gravity;
 import android.view.View;
@@ -30,20 +35,23 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationCallback;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.tasks.CancellationToken;
+import com.google.android.gms.tasks.CancellationTokenSource;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.OnTokenCanceledListener;
 
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
@@ -60,20 +68,17 @@ import info.mqtt.android.service.Ack;
 import info.mqtt.android.service.MqttAndroidClient;
 import technology.moro.thesis.R;
 import technology.moro.thesis.dtos.TransmissionDataDTO;
+import technology.moro.thesis.services.MeasurementService;
 import timber.log.Timber;
 
 public class MeasurementActivity extends AppCompatActivity implements OnMapReadyCallback, SensorEventListener {
     private static final String TAG = "!===== MeasurementActivity =====!";
 
-    private SharedPreferences sharedPreferences;
     private String email;
 
-    private static final int REQUEST_LOCATION_PERMISSION = 1;
     private GoogleMap map;
-    private FusedLocationProviderClient fusedLocationClient;
-    private LocationCallback locationCallback;
-    private static final long LOCATION_UPDATE_INTERVAL = 3000; // 3 seconds
     private LatLng currentLocation;
+    private BroadcastReceiver locationUpdateReceiver;
 
     private TextView elapsedTimeTextView;
     private Handler elapsedTimeHandler;
@@ -82,21 +87,21 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
     private boolean isMeasuring = false;
     private int elapsedSeconds;
 
-    private static final long ACCELEROMETER_UPDATE_INTERVAL = 100; // 200 milliseconds
+    private static final long ACCELEROMETER_UPDATE_INTERVAL = 50; // 50 milliseconds
     private TextView accelerometerValuesTextView;
     private Handler accelerometerHandler;
     private Sensor accelerometerSensor;
     private SensorManager sensorManager;
-    private final float[] accelerometerValues = new float[]{0,0,0};
+    private final float[] accelerometerValues = new float[]{0, 0, 0};
 
     private MqttAndroidClient mqttClient;
-    private static final long MESSAGE_SEND_INTERVAL = 3000; // 6 seconds
+    private static final long MESSAGE_SEND_INTERVAL = 3000; // 3 seconds
     private Handler messageHandler;
     private final List<TransmissionDataDTO> data = new ArrayList<>();
 
-    private static final String CHANNEL_ID = "measurement_notification_channel";
-    private static final String CHANNEL_NAME = "Measurement Notification Channel";
-    private static final int NOTIFICATION_THRESHOLD = 1800; // value in seconds -> 1800 = 30 minutes
+    private static final String CHANNEL_ID = "measurement_activity_channel";
+    private static final String CHANNEL_NAME = "Measurement Activity Channel";
+    private static final int NOTIFICATION_THRESHOLD = 1800; // 1800 seconds = 30 minutes
     private static int notificationToBeSent;
 
     @SuppressLint("LongLogTag")
@@ -105,41 +110,20 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_measurement);
 
-        sharedPreferences = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
+        SharedPreferences sharedPreferences = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
         email = sharedPreferences.getString(EMAIL_KEY, "");
 
         // Check if location permission is granted
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // Permission is not granted, request it
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION_PERMISSION);
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            moveCameraToUserLocation();
         } else {
-            initMap();
-            fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-
-            LocationRequest locationRequest = LocationRequest.create();
-            locationRequest.setInterval(LOCATION_UPDATE_INTERVAL);
-            locationRequest.setFastestInterval(LOCATION_UPDATE_INTERVAL);
-            locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-
-            locationCallback = new LocationCallback() {
-                @Override
-                public void onLocationResult(@NonNull LocationResult locationResult) {
-                    for (Location location : locationResult.getLocations()) {
-                        // Update the map camera to the user's current location
-                        currentLocation = new LatLng(location.getLatitude(), location.getLongitude());
-                        map.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 15f));
-                        if (!isMeasuring) {
-                            startButton.setEnabled(true);
-                        }
-                    }
-                }
-            };
-
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                return;
-            }
-            fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
+            // Request location permission from the user
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION_PERMISSION);
         }
+
+        locationUpdateReceiver = new LocationUpdateReceiver();
+        IntentFilter filter = new IntentFilter("location_update");
+        LocalBroadcastManager.getInstance(this).registerReceiver(locationUpdateReceiver, filter);
 
         connectToMqttBroker();
 
@@ -171,6 +155,122 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
         createNotificationChannel();
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == REQUEST_LOCATION_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Location permission granted
+                moveCameraToUserLocation();
+            } else {
+                // Location permission denied
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
+                    // Show an explanation to the user and request again if needed
+                    showPermissionRationaleDialog();
+                } else {
+                    // User has permanently denied the permission, navigate back to the previous activity or exit the app
+                    showPermissionDeniedDialog();
+                }
+            }
+        }
+    }
+
+    // Move camera to user's location
+    private void moveCameraToUserLocation() {
+        initMap();
+        FusedLocationProviderClient fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        fusedLocationClient.getCurrentLocation(PRIORITY_HIGH_ACCURACY, new CancellationToken() {
+                    @NonNull
+                    @Override
+                    public CancellationToken onCanceledRequested(@NonNull OnTokenCanceledListener onTokenCanceledListener) {
+                        return new CancellationTokenSource().getToken();
+                    }
+
+                    @Override
+                    public boolean isCancellationRequested() {
+                        return false;
+                    }
+                })
+                .addOnSuccessListener(this, new OnSuccessListener<Location>() {
+                    @Override
+                    public void onSuccess(Location location) {
+                        // Got last known location. In some rare situations this can be null.
+                        if (location != null) {
+                            // Update the map camera to the user's current location
+                            currentLocation = new LatLng(location.getLatitude(), location.getLongitude());
+                            map.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 15f));
+                            if (!isMeasuring) {
+                                startButton.setEnabled(true);
+                            }
+                        }
+                    }
+                });
+    }
+
+    // Show a dialog explaining why the location permission is required
+    private void showPermissionRationaleDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Location Permission")
+                .setMessage("This app requires access to your location to provide accurate results.")
+                .setPositiveButton("Grant Permission", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        // Request location permission again
+                        ActivityCompat.requestPermissions(MeasurementActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION_PERMISSION);
+                    }
+                })
+                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        // User has denied the permission, navigate back to the previous activity or exit the app
+                        navigateToPreviousActivity();
+                    }
+                })
+                .setCancelable(false)
+                .show();
+    }
+
+    // Show a dialog informing the user about denied permission and providing an option to open app settings
+    private void showPermissionDeniedDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Permission Denied")
+                .setMessage("You have denied location permission. To enable this feature, please grant the permission from the app settings.")
+                .setPositiveButton("Open Settings", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        openAppSettings();
+                    }
+                })
+                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        // User has denied the permission, navigate back to the previous activity or exit the app
+                        navigateToPreviousActivity();
+                    }
+                })
+                .setCancelable(false)
+                .show();
+    }
+
+    // Open the app settings screen
+    private void openAppSettings() {
+        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+        Uri uri = Uri.fromParts("package", getPackageName(), null);
+        intent.setData(uri);
+        startActivity(intent);
+    }
+
+    // Navigate to the previous activity or exit the app
+    private void navigateToPreviousActivity() {
+        // Here, you can navigate back to the previous activity or close the app as per your requirement
+        // For example, you can use the finish() method to close the current activity
+        finish();
+    }
+
     @SuppressLint("LongLogTag")
     private void startMeasurement() {
         Timber.tag(TAG).v("Starting measurements...");
@@ -180,6 +280,7 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
         startTimerUpdates();
         startAccelerometerUpdates();
         startMessageSending();
+        startForegroundMeasurementService();
         Timber.tag(TAG).v("Measurements started!");
     }
 
@@ -192,10 +293,10 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
         notificationToBeSent = NOTIFICATION_THRESHOLD;
         startButton.setEnabled(true);
         stopButton.setEnabled(false);
-        stopLocationUpdates();
         stopTimerUpdates();
         stopAccelerometerUpdates();
         stopMessageSending();
+        stopForegroundMeasurementService();
         resetValues();
         Timber.tag(TAG).v("Measurements stopped!");
     }
@@ -217,7 +318,7 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
         }
     }
 
-    private Runnable messageRunnable = new Runnable() {
+    private final Runnable messageRunnable = new Runnable() {
         @Override
         public void run() {
             // Send the message using MQTT
@@ -238,6 +339,7 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
         Timber.tag(TAG).v("Mqtt message published!");
     }
 
+    @SuppressLint("SetTextI18n")
     private void resetValues() {
         elapsedTimeTextView.setText("Elapsed Time: 00:00:00");
         accelerometerValuesTextView.setText("X: 0.0\nY: 0.0\nZ: 0.0");
@@ -314,13 +416,6 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
             elapsedTimeHandler.removeCallbacks(timerRunnable);
             Timber.tag(TAG).v("Timer updates stopped!");
         }
-    }
-
-    @SuppressLint("LongLogTag")
-    private void stopLocationUpdates() {
-        Timber.tag(TAG).v("Stopping location updates...");
-        fusedLocationClient.removeLocationUpdates(locationCallback);
-        Timber.tag(TAG).v("Location updates stopped!");
     }
 
     @SuppressLint("LongLogTag")
@@ -411,8 +506,7 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
     }
 
     private boolean isLocationEnabled() {
-        int mode = Settings.Secure.getInt(getContentResolver(), Settings.Secure.LOCATION_MODE,
-                Settings.Secure.LOCATION_MODE_OFF);
+        int mode = Settings.Secure.getInt(getContentResolver(), Settings.Secure.LOCATION_MODE, Settings.Secure.LOCATION_MODE_OFF);
         return (mode != Settings.Secure.LOCATION_MODE_OFF);
     }
 
@@ -430,8 +524,11 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
     }
 
     private void createNotificationChannel() {
-        NotificationChannel channel = new NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT);
-        channel.setDescription("My Channel Description");
+        NotificationChannel channel = new NotificationChannel(
+                CHANNEL_ID,
+                CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_DEFAULT
+        );
         channel.enableLights(true);
         channel.setLightColor(Color.RED);
 
@@ -449,7 +546,7 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
         Notification notification = new Notification.Builder(this, CHANNEL_ID)
                 .setContentTitle("Did you reach your destination?")
                 .setContentText("If yes, please stop the measurement or close the app!")
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setSmallIcon(R.drawable.ramp_logo)
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
                 .build();
@@ -469,5 +566,37 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
                 t.show();
             }
         });
+    }
+
+    private void startForegroundMeasurementService() {
+        Intent serviceIntent = new Intent(this, MeasurementService.class);
+        serviceIntent.setAction("START_FOREGROUND_ACTION");
+        startForegroundService(serviceIntent);
+    }
+
+    private void stopForegroundMeasurementService() {
+        Intent serviceIntent = new Intent(this, MeasurementService.class);
+        serviceIntent.setAction("STOP_FOREGROUND_ACTION");
+        startForegroundService(serviceIntent);
+    }
+
+    @Override
+    protected void onDestroy() {
+        // Unregister the location update receiver
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(locationUpdateReceiver);
+        super.onDestroy();
+    }
+
+    private class LocationUpdateReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            double latitude = intent.getDoubleExtra("latitude", 0.0);
+            double longitude = intent.getDoubleExtra("longitude", 0.0);
+            currentLocation = new LatLng(latitude, longitude);
+            map.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 15f));
+            if (!isMeasuring) {
+                startButton.setEnabled(true);
+            }
+        }
     }
 }

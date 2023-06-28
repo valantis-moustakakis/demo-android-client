@@ -11,16 +11,13 @@ import technology.moro.thesis.R;
 
 public class AuthenticationActivity extends AppCompatActivity {
 
-    private Button loginButton;
-    private Button signUpButton;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_authentication);
 
-        loginButton = findViewById(R.id.login_button);
-        signUpButton = findViewById(R.id.signup_button);
+        Button loginButton = findViewById(R.id.login_button);
+        Button signUpButton = findViewById(R.id.signup_button);
 
         loginButton.setOnClickListener(new View.OnClickListener() {
             @Override

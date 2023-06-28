@@ -15,11 +15,13 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.gson.Gson;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -36,7 +38,6 @@ public class SignUpActivity extends AppCompatActivity {
     private EditText emailEditText;
     private EditText passwordEditText;
     private EditText confirmPasswordEditText;
-    private Button signUpButton;
 
     private OkHttpClient httpClient;
 
@@ -48,7 +49,7 @@ public class SignUpActivity extends AppCompatActivity {
         emailEditText = findViewById(R.id.email_edit_text);
         passwordEditText = findViewById(R.id.password_edit_text);
         confirmPasswordEditText = findViewById(R.id.confirm_password_edit_text);
-        signUpButton = findViewById(R.id.sign_up_button);
+        Button signUpButton = findViewById(R.id.sign_up_button);
 
         httpClient = new OkHttpClient();
 
@@ -96,17 +97,17 @@ public class SignUpActivity extends AppCompatActivity {
 
         httpClient.newCall(request).enqueue(new Callback() {
             @Override
-            public void onFailure(Call call, IOException e) {
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
                 e.printStackTrace();
                 showToast("Sign Up failed");
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
                 if (response.isSuccessful()) {
                     navigateToLogin();
                 } else {
-                    String stringAuthenticationResponse = response.body().string();
+                    String stringAuthenticationResponse = Objects.requireNonNull(response.body()).string();
                     Gson gson = new Gson();
                     AuthenticationResponseDTO authenticationResponse = gson.fromJson(stringAuthenticationResponse, AuthenticationResponseDTO.class);
                     showToast("Sign Up failed:\n" + authenticationResponse.getMessage());

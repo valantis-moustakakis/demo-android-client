@@ -38,7 +38,6 @@ public class LoginActivity extends AppCompatActivity {
 
     private EditText emailEditText;
     private EditText passwordEditText;
-    private Button loginButton;
 
     private SharedPreferences sharedPreferences;
     private OkHttpClient httpClient;
@@ -50,7 +49,7 @@ public class LoginActivity extends AppCompatActivity {
 
         emailEditText = findViewById(R.id.email_edit_text);
         passwordEditText = findViewById(R.id.password_edit_text);
-        loginButton = findViewById(R.id.login_button);
+        Button loginButton = findViewById(R.id.login_button);
 
         sharedPreferences = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
         httpClient = new OkHttpClient();

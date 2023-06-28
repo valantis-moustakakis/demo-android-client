@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">thesis</string>
+    <string name="app_name">Ramp</string>
     <string-array name="severity_array">
         <item>Low</item>
         <item>Medium</item>
