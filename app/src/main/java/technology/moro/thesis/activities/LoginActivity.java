@@ -9,17 +9,21 @@ import static technology.moro.thesis.Constants.PREF_NAME;
 import static technology.moro.thesis.validators.CredentialsValidator.validateEmail;
 import static technology.moro.thesis.validators.CredentialsValidator.validatePassword;
 
+import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.view.Gravity;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.gson.Gson;
 
 import java.io.IOException;
@@ -38,6 +42,8 @@ public class LoginActivity extends AppCompatActivity {
 
     private EditText emailEditText;
     private EditText passwordEditText;
+    private TextInputLayout emailTextInputLayout;
+    private TextInputLayout passwordTextInputLayout;
 
     private SharedPreferences sharedPreferences;
     private OkHttpClient httpClient;
@@ -48,7 +54,11 @@ public class LoginActivity extends AppCompatActivity {
         setContentView(R.layout.activity_login);
 
         emailEditText = findViewById(R.id.email_edit_text);
+        emailTextInputLayout = findViewById(R.id.email_input_layout);
+
         passwordEditText = findViewById(R.id.password_edit_text);
+        passwordTextInputLayout = findViewById(R.id.password_input_layout);
+
         Button loginButton = findViewById(R.id.login_button);
 
         sharedPreferences = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
@@ -60,6 +70,8 @@ public class LoginActivity extends AppCompatActivity {
                 String email = emailEditText.getText().toString().trim();
                 String password = passwordEditText.getText().toString().trim();
 
+                hideKeyboard();
+
                 if (isInputValid(email, password)) {
                     performLogin(email, password);
                 }
@@ -67,18 +79,34 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
+    public void hideKeyboard() {
+        InputMethodManager imm = (InputMethodManager) this.getSystemService(Activity.INPUT_METHOD_SERVICE);
+        //Find the currently focused view, so we can grab the correct window token from it.
+        View view = this.getCurrentFocus();
+        //If no view currently has focus, create a new one, just so we can grab a window token from it
+        if (view == null) {
+            view = new View(this);
+        }
+        imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+    }
+
     private boolean isInputValid(String email, String password) {
+        boolean isValid = true;
         if (email.isEmpty() || !validateEmail(email)) {
-            showToast("Invalid email");
-            return false;
+            emailTextInputLayout.setError("Invalid Email");
+            isValid = false;
+        } else {
+            emailTextInputLayout.setError(null);
         }
 
         if (password.isEmpty() || !validatePassword(password)) {
-            showToast("Invalid password");
-            return false;
+            passwordTextInputLayout.setError("Invalid Password");
+            isValid = false;
+        } else {
+            passwordTextInputLayout.setError(null);
         }
 
-        return true;
+        return isValid;
     }
 
     private void performLogin(String email, String password) {
@@ -131,8 +159,7 @@ public class LoginActivity extends AppCompatActivity {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Toast t = Toast.makeText(LoginActivity.this, message, Toast.LENGTH_SHORT);
-                t.setGravity(Gravity.FILL_HORIZONTAL, 0, 0);
+                Toast t = Toast.makeText(LoginActivity.this, message, Toast.LENGTH_LONG);
                 t.show();
             }
         });

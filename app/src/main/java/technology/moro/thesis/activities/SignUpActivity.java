@@ -7,10 +7,11 @@ import static technology.moro.thesis.validators.CredentialsValidator.validateCon
 import static technology.moro.thesis.validators.CredentialsValidator.validateEmail;
 import static technology.moro.thesis.validators.CredentialsValidator.validatePassword;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.Gravity;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -18,6 +19,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.gson.Gson;
 
 import java.io.IOException;
@@ -38,6 +40,9 @@ public class SignUpActivity extends AppCompatActivity {
     private EditText emailEditText;
     private EditText passwordEditText;
     private EditText confirmPasswordEditText;
+    private TextInputLayout emailTextInputLayout;
+    private TextInputLayout passwordTextInputLayout;
+    private TextInputLayout confirmPasswordTextInputLayout;
 
     private OkHttpClient httpClient;
 
@@ -47,8 +52,14 @@ public class SignUpActivity extends AppCompatActivity {
         setContentView(R.layout.activity_sign_up);
 
         emailEditText = findViewById(R.id.email_edit_text);
+        emailTextInputLayout = findViewById(R.id.email_input_layout);
+
         passwordEditText = findViewById(R.id.password_edit_text);
+        passwordTextInputLayout = findViewById(R.id.password_input_layout);
+
         confirmPasswordEditText = findViewById(R.id.confirm_password_edit_text);
+        confirmPasswordTextInputLayout = findViewById(R.id.confirm_password_input_layout);
+
         Button signUpButton = findViewById(R.id.sign_up_button);
 
         httpClient = new OkHttpClient();
@@ -60,6 +71,8 @@ public class SignUpActivity extends AppCompatActivity {
                 String password = passwordEditText.getText().toString().trim();
                 String confirmPassword = confirmPasswordEditText.getText().toString().trim();
 
+                hideKeyboard();
+
                 if (isInputValid(email, password, confirmPassword)) {
                     performSignUp(email, password, confirmPassword);
                 }
@@ -67,23 +80,41 @@ public class SignUpActivity extends AppCompatActivity {
         });
     }
 
+    public void hideKeyboard() {
+        InputMethodManager imm = (InputMethodManager) this.getSystemService(Activity.INPUT_METHOD_SERVICE);
+        //Find the currently focused view, so we can grab the correct window token from it.
+        View view = this.getCurrentFocus();
+        //If no view currently has focus, create a new one, just so we can grab a window token from it
+        if (view == null) {
+            view = new View(this);
+        }
+        imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+    }
+
     private boolean isInputValid(String email, String password, String confirmPassword) {
+        boolean isValid = true;
         if (email.isEmpty() || !validateEmail(email)) {
-            showToast("Invalid email");
-            return false;
+            emailTextInputLayout.setError("Invalid Email");
+            isValid = false;
+        } else {
+            emailTextInputLayout.setError(null);
         }
 
         if (password.isEmpty() || !validatePassword(password)) {
-            showToast("Password must be between 7 and 30 characters long");
-            return false;
+            passwordTextInputLayout.setError("Password must be between 7 and 30 characters long");
+            isValid = false;
+        } else {
+            passwordTextInputLayout.setError(null);
         }
 
         if (confirmPassword.isEmpty() || !validateConfirmPassword(password, confirmPassword)) {
-            showToast("Passwords do not match");
-            return false;
+            confirmPasswordTextInputLayout.setError("Passwords do not match");
+            isValid = false;
+        } else {
+            confirmPasswordTextInputLayout.setError(null);
         }
 
-        return true;
+        return isValid;
     }
 
     private void performSignUp(String email, String password, String confirmPassword) {
@@ -128,8 +159,7 @@ public class SignUpActivity extends AppCompatActivity {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Toast t = Toast.makeText(SignUpActivity.this, message, Toast.LENGTH_SHORT);
-                t.setGravity(Gravity.FILL_HORIZONTAL, 0, 0);
+                Toast t = Toast.makeText(SignUpActivity.this, message, Toast.LENGTH_LONG);
                 t.show();
             }
         });

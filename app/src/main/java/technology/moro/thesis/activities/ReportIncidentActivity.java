@@ -209,8 +209,7 @@ public class ReportIncidentActivity extends AppCompatActivity implements OnMapRe
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Toast t = Toast.makeText(ReportIncidentActivity.this, message, Toast.LENGTH_SHORT);
-                t.setGravity(Gravity.FILL_HORIZONTAL, 0, 0);
+                Toast t = Toast.makeText(ReportIncidentActivity.this, message, Toast.LENGTH_LONG);
                 t.show();
             }
         });
@@ -260,7 +259,7 @@ public class ReportIncidentActivity extends AppCompatActivity implements OnMapRe
         if (!isLocationEnabled) {
             // Location is disabled, show a toast message and navigate back to HomeActivity
             Toast.makeText(this, "Location is disabled. Map cannot be used.",
-                    Toast.LENGTH_SHORT).show();
+                    Toast.LENGTH_LONG).show();
             navigateToHomeActivity();
             return;
         }

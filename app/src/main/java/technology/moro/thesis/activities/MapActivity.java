@@ -10,6 +10,7 @@ import static technology.moro.thesis.Constants.PREF_NAME;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -21,7 +22,6 @@ import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.view.Gravity;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -41,6 +41,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
@@ -229,7 +230,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         if (!isLocationEnabled) {
             // Location is disabled, show a toast message and navigate back to HomeActivity
             Toast.makeText(this, "Location is disabled. Map cannot be used.",
-                    Toast.LENGTH_SHORT).show();
+                    Toast.LENGTH_LONG).show();
             navigateToHomeActivity();
             return;
         }
@@ -399,6 +400,20 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         }
     }
 
+    private BitmapDescriptor bitmapFromVector(Context context, int vectorResId) {
+        Drawable vectorDrawable = ContextCompat.getDrawable(context, vectorResId);
+        vectorDrawable.setBounds(0, 0, vectorDrawable.getIntrinsicWidth(), vectorDrawable.getIntrinsicHeight());
+        Bitmap bitmap = Bitmap.createBitmap(
+                vectorDrawable.getIntrinsicWidth(),
+                vectorDrawable.getIntrinsicHeight(),
+                Bitmap.Config.ARGB_8888);
+
+        Canvas canvas = new Canvas(bitmap);
+        vectorDrawable.draw(canvas);
+
+        return BitmapDescriptorFactory.fromBitmap(bitmap);
+    }
+
     private void addStreetMarkers(List<StreetInfo> streets) {
         Bitmap redDot = getBitmap(R.drawable.red_dot);
         Bitmap orangeDot = getBitmap(R.drawable.orange_dot);
@@ -512,8 +527,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Toast t = Toast.makeText(MapActivity.this, message, Toast.LENGTH_SHORT);
-                t.setGravity(Gravity.FILL_HORIZONTAL, 0, 0);
+                Toast t = Toast.makeText(MapActivity.this, message, Toast.LENGTH_LONG);
                 t.show();
             }
         });

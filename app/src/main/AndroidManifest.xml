@@ -28,7 +28,7 @@
             android:label="Home" />
         <activity
             android:name=".activities.AuthenticationActivity"
-            android:label="Home" />
+            android:label="RampBuddy" />
         <activity
             android:name=".activities.LoginActivity"
             android:label="Login" />

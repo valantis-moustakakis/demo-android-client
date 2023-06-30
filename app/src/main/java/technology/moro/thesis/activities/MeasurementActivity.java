@@ -88,7 +88,6 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
     private int elapsedSeconds;
 
     private static final long ACCELEROMETER_UPDATE_INTERVAL = 50; // 50 milliseconds
-    private TextView accelerometerValuesTextView;
     private Handler accelerometerHandler;
     private Sensor accelerometerSensor;
     private SensorManager sensorManager;
@@ -131,11 +130,10 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
         accelerometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 
         elapsedTimeTextView = findViewById(R.id.elapsedTimeTextView);
-        accelerometerValuesTextView = findViewById(R.id.accelerometerValuesTextView);
         startButton = findViewById(R.id.start_button);
         stopButton = findViewById(R.id.stop_button);
-        startButton.setEnabled(false);
-        stopButton.setEnabled(false);
+        disableButton(startButton);
+        disableButton(stopButton);
 
         startButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -204,7 +202,8 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
                             currentLocation = new LatLng(location.getLatitude(), location.getLongitude());
                             map.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 15f));
                             if (!isMeasuring) {
-                                startButton.setEnabled(true);
+                                enableButton(startButton);
+                                disableButton(stopButton);
                             }
                         }
                     }
@@ -275,8 +274,8 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
     private void startMeasurement() {
         Timber.tag(TAG).v("Starting measurements...");
         isMeasuring = true;
-        startButton.setEnabled(false);
-        stopButton.setEnabled(true);
+        disableButton(startButton);
+        enableButton(stopButton);
         startTimerUpdates();
         startAccelerometerUpdates();
         startMessageSending();
@@ -291,8 +290,8 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
         elapsedSeconds = 0;
         data.clear();
         notificationToBeSent = NOTIFICATION_THRESHOLD;
-        startButton.setEnabled(true);
-        stopButton.setEnabled(false);
+        disableButton(stopButton);
+        enableButton(startButton);
         stopTimerUpdates();
         stopAccelerometerUpdates();
         stopMessageSending();
@@ -342,7 +341,6 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
     @SuppressLint("SetTextI18n")
     private void resetValues() {
         elapsedTimeTextView.setText("Elapsed Time: 00:00:00");
-        accelerometerValuesTextView.setText("X: 0.0\nY: 0.0\nZ: 0.0");
     }
 
     private final Runnable accelerometerRunnable = new Runnable() {
@@ -352,7 +350,6 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
             float x = accelerometerValues[0];
             float y = accelerometerValues[1];
             float z = accelerometerValues[2];
-            accelerometerValuesTextView.setText("X: " + x + "\nY: " + y + "\nZ: " + z);
             data.add(new TransmissionDataDTO(System.currentTimeMillis(), email, (float) currentLocation.longitude, (float) currentLocation.latitude, x, y, z));
             if (isMeasuring) {
                 accelerometerHandler.postDelayed(this, ACCELEROMETER_UPDATE_INTERVAL);
@@ -561,8 +558,7 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Toast t = Toast.makeText(MeasurementActivity.this, message, Toast.LENGTH_SHORT);
-                t.setGravity(Gravity.FILL_HORIZONTAL, 0, 0);
+                Toast t = Toast.makeText(MeasurementActivity.this, message, Toast.LENGTH_LONG);
                 t.show();
             }
         });
@@ -587,6 +583,16 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
         super.onDestroy();
     }
 
+    private void enableButton(Button button) {
+        button.setAlpha(1f);
+        button.setClickable(true);
+    }
+
+    private void disableButton(Button button) {
+        button.setAlpha(.25f);
+        button.setClickable(false);
+    }
+
     private class LocationUpdateReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -595,8 +601,10 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
             currentLocation = new LatLng(latitude, longitude);
             map.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 15f));
             if (!isMeasuring) {
-                startButton.setEnabled(true);
+                enableButton(startButton);
+                disableButton(stopButton);
             }
         }
     }
+
 }
