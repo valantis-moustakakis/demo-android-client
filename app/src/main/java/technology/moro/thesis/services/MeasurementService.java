@@ -34,36 +34,38 @@ public class MeasurementService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        FusedLocationProviderClient fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         if ("START_FOREGROUND_ACTION".equals(intent.getAction())) {
             startForeground(NOTIFICATION_ID, createNotification());
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                FusedLocationProviderClient fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-
                 LocationRequest locationRequest = LocationRequest.create();
                 locationRequest.setInterval(LOCATION_UPDATE_INTERVAL);
                 locationRequest.setFastestInterval(LOCATION_UPDATE_INTERVAL);
                 locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
-                LocationCallback locationCallback = new LocationCallback() {
-                    @Override
-                    public void onLocationResult(@NonNull LocationResult locationResult) {
-                        for (Location location : locationResult.getLocations()) {
-                            Intent intent = new Intent("location_update");
-                            intent.putExtra("latitude", location.getLatitude());
-                            intent.putExtra("longitude", location.getLongitude());
-                            LocalBroadcastManager.getInstance(MeasurementService.this).sendBroadcast(intent);
-                        }
-                    }
-                };
                 fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
             }
 
         } else if ("STOP_FOREGROUND_ACTION".equals(intent.getAction())) {
             stopForeground(true);
             stopSelfResult(startId);
+            fusedLocationClient.removeLocationUpdates(locationCallback);
         }
         return START_STICKY;
     }
+
+    private final LocationCallback locationCallback = new LocationCallback() {
+        @Override
+        public void onLocationResult(@NonNull LocationResult locationResult) {
+            for (Location location : locationResult.getLocations()) {
+                Intent intent = new Intent("location_update");
+                intent.putExtra("latitude", location.getLatitude());
+                intent.putExtra("longitude", location.getLongitude());
+                intent.putExtra("accuracy", location.getAccuracy());
+                LocalBroadcastManager.getInstance(MeasurementService.this).sendBroadcast(intent);
+            }
+        }
+    };
 
     private Notification createNotification() {
         createNotificationChannel();

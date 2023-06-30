@@ -28,7 +28,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.Settings;
-import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -81,6 +80,7 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
     private BroadcastReceiver locationUpdateReceiver;
 
     private TextView elapsedTimeTextView;
+    private TextView gpsSignalTextView;
     private Handler elapsedTimeHandler;
     private Button startButton;
     private Button stopButton;
@@ -130,6 +130,7 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
         accelerometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 
         elapsedTimeTextView = findViewById(R.id.elapsedTimeTextView);
+        gpsSignalTextView = findViewById(R.id.gpsSignalTextView);
         startButton = findViewById(R.id.start_button);
         stopButton = findViewById(R.id.stop_button);
         disableButton(startButton);
@@ -594,12 +595,17 @@ public class MeasurementActivity extends AppCompatActivity implements OnMapReady
     }
 
     private class LocationUpdateReceiver extends BroadcastReceiver {
+        @SuppressLint("SetTextI18n")
         @Override
         public void onReceive(Context context, Intent intent) {
             double latitude = intent.getDoubleExtra("latitude", 0.0);
             double longitude = intent.getDoubleExtra("longitude", 0.0);
+            float accuracy = intent.getFloatExtra("accuracy", 0.0f);
             currentLocation = new LatLng(latitude, longitude);
-            map.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 15f));
+
+            String gpsSignalPower = accuracy > 7 ? "Weak" : "Strong";
+            gpsSignalTextView.setText("GPS signal: " + gpsSignalPower);
+
             if (!isMeasuring) {
                 enableButton(startButton);
                 disableButton(stopButton);
