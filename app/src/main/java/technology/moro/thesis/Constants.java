@@ -9,6 +9,8 @@ public class Constants {
     public static final String EMAIL_KEY = "thesis:email";
 
     public static final String EMAIL_ADDRESS_REGEX = "^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,10}$";
+//    public static final String PASSWORD_REGEX = "^(?=.*[A-Za-z])(?=.*\\d).{6,30}$";
+    public static final String PASSWORD_REGEX = "^.*$";
 
     public static final String BASE_URL = "http://192.168.1.128:8080/demo";
 //    public static final String BASE_URL = "https://34.28.182.12:8080/demo";
