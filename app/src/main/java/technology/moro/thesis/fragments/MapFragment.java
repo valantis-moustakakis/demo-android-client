@@ -25,10 +25,14 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
@@ -73,14 +77,15 @@ import technology.moro.thesis.activities.HomeActivity;
 import technology.moro.thesis.dtos.Incident;
 import technology.moro.thesis.dtos.StreetInfo;
 
-public class MapFragment extends SupportMapFragment implements OnMapReadyCallback, GoogleMap.OnCameraChangeListener {
+public class MapFragment extends SupportMapFragment implements OnMapReadyCallback, GoogleMap.OnCameraChangeListener, ActivityResultCallback<Boolean> {
 
     private static final int REQUEST_LOCATION_PERMISSION = 1;
+    private ActivityResultLauncher<String> requestPermissionLauncher;
 
     private GoogleMap mMap;
     private FusedLocationProviderClient fusedLocationClient;
     private LocationCallback locationCallback;
-    private int locationCounts = 0;
+    private boolean firstLocation = true;
 
     private Handler cameraChangeHandler;
     private boolean cameraChangeInProgress;
@@ -110,12 +115,15 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         cameraChangeHandler = new Handler(Looper.getMainLooper());
         cameraChangeInProgress = false;
 
+        requestPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), this);
+
         // Check if location permission is granted
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            initMap();
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // Permission is not granted, request it
+            requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
         } else {
-            // Request location permission from the user
-            ActivityCompat.requestPermissions(requireActivity(), new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION_PERMISSION);
+            // Permission is already granted, handle it
+            handleLocationPermissionGranted();
         }
     }
 
@@ -162,39 +170,17 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         }
 
         // Enable the user's current location on the map
-        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             mMap.setMyLocationEnabled(true);
-        }
 
-        // Start location updates
-        startLocationUpdates();
+            // Start location updates
+            startLocationUpdates();
 
-        jwtToken = sharedPreferences.getString(JWT_TOKEN_KEY, "");
-        email = sharedPreferences.getString(EMAIL_KEY, "");
-        // Perform the GET requests for incidents and streets
-        performGetIncidentsRequest(email, jwtToken);
-        performGetStreetRequest(email, jwtToken);
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
-        if (requestCode == REQUEST_LOCATION_PERMISSION) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Location permission granted
-                initMap();
-            } else {
-                // Location permission denied
-                if (ActivityCompat.shouldShowRequestPermissionRationale(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION)) {
-                    // Show an explanation to the user and request again if needed
-                    showPermissionRationaleDialog();
-                } else {
-                    // User has permanently denied the permission, navigate back to the previous activity or exit the app
-                    showPermissionDeniedDialog();
-                }
-            }
+            jwtToken = sharedPreferences.getString(JWT_TOKEN_KEY, "");
+            email = sharedPreferences.getString(EMAIL_KEY, "");
+            // Perform the GET requests for incidents and streets
+            performGetIncidentsRequest(email, jwtToken);
+            performGetStreetRequest(email, jwtToken);
         }
     }
 
@@ -471,12 +457,12 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         locationCallback = new LocationCallback() {
             @Override
             public void onLocationResult(@NonNull LocationResult locationResult) {
-                locationCounts++;
                 for (Location location : locationResult.getLocations()) {
                     // Update the map camera to the user's current location
                     LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-                    if (locationCounts <= 1) {
+                    if (firstLocation) {
                         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f));
+                        firstLocation = false;
                     }
                     Intent intent = new Intent("map_location_update");
                     intent.putExtra("latitude", location.getLatitude());
@@ -545,7 +531,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
 
     @Override
     public void onCameraChange(@NonNull CameraPosition cameraPosition) {
-        if (!cameraChangeInProgress) {
+        if (!cameraChangeInProgress && !firstLocation) {
             // If there is no camera change in progress, execute the code immediately
             performGetIncidentsRequest(email, jwtToken);
             performGetStreetRequest(email, jwtToken);
@@ -557,10 +543,46 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
             cameraChangeHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    // Reset the flag after 1 second
                     cameraChangeInProgress = false;
                 }
             }, 2000);
+        }
+    }
+
+    @Override
+    public void onActivityResult(Boolean isPermissionGranted) {
+        if (isPermissionGranted) {
+            // Location permission granted, handle it
+            handleLocationPermissionGranted();
+        } else {
+            // Location permission denied or revoked, handle it
+            handleLocationPermissionDenied();
+        }
+    }
+
+    private void handleLocationPermissionGranted() {
+        // Location permission is granted, perform the necessary operations
+        initMap();
+
+        // Start location updates
+        startLocationUpdates();
+
+        jwtToken = sharedPreferences.getString(JWT_TOKEN_KEY, "");
+        email = sharedPreferences.getString(EMAIL_KEY, "");
+        // Perform the GET requests for incidents and streets
+        performGetIncidentsRequest(email, jwtToken);
+        performGetStreetRequest(email, jwtToken);
+    }
+
+    private void handleLocationPermissionDenied() {
+        // Location permission is denied or revoked, handle it accordingly
+        // Location permission denied
+        if (ActivityCompat.shouldShowRequestPermissionRationale(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION)) {
+            // Show an explanation to the user and request again if needed
+            showPermissionRationaleDialog();
+        } else {
+            // User has permanently denied the permission, navigate back to the previous activity or exit the app
+            showPermissionDeniedDialog();
         }
     }
 }
