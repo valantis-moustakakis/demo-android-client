@@ -44,12 +44,10 @@
         android:layout_marginTop="16dp"
         android:textSize="30sp" />
 
-    <fragment
-        android:id="@+id/map_view_incident"
-        android:name="com.google.android.gms.maps.SupportMapFragment"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/fragment_container_view"
         android:layout_marginTop="16dp"
-        tools:context=".activities.ReportIncidentActivity" />
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
 
 </LinearLayout>
