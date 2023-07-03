@@ -177,8 +177,9 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
             jwtToken = sharedPreferences.getString(JWT_TOKEN_KEY, "");
             email = sharedPreferences.getString(EMAIL_KEY, "");
             // Perform the GET requests for incidents and streets
-            performGetIncidentsRequest(email, jwtToken);
-            performGetStreetRequest(email, jwtToken);
+            LatLngBounds boundingBox = getMapBoundingBox();
+            performGetIncidentsRequest(email, jwtToken, boundingBox);
+            performGetStreetRequest(email, jwtToken, boundingBox);
         }
     }
 
@@ -249,8 +250,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         }
     }
 
-    private void performGetIncidentsRequest(String email, String jwtToken) {
-        LatLngBounds boundingBox = getMapBoundingBox();
+    private void performGetIncidentsRequest(String email, String jwtToken, LatLngBounds boundingBox) {
         double swlat = boundingBox.southwest.latitude;
         double swlon = boundingBox.southwest.longitude;
         double nelat = boundingBox.northeast.latitude;
@@ -287,8 +287,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         });
     }
 
-    private void performGetStreetRequest(String email, String jwtToken) {
-        LatLngBounds boundingBox = getMapBoundingBox();
+    private void performGetStreetRequest(String email, String jwtToken, LatLngBounds boundingBox) {
         double swlat = boundingBox.southwest.latitude;
         double swlon = boundingBox.southwest.longitude;
         double nelat = boundingBox.northeast.latitude;
@@ -533,8 +532,9 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
     public void onCameraChange(@NonNull CameraPosition cameraPosition) {
         if (!cameraChangeInProgress && !firstLocation) {
             // If there is no camera change in progress, execute the code immediately
-            performGetIncidentsRequest(email, jwtToken);
-            performGetStreetRequest(email, jwtToken);
+            LatLngBounds boundingBox = getMapBoundingBox();
+            performGetIncidentsRequest(email, jwtToken, boundingBox);
+            performGetStreetRequest(email, jwtToken, boundingBox);
 
             // Set a flag to indicate that a camera change is in progress
             cameraChangeInProgress = true;
@@ -570,8 +570,9 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         jwtToken = sharedPreferences.getString(JWT_TOKEN_KEY, "");
         email = sharedPreferences.getString(EMAIL_KEY, "");
         // Perform the GET requests for incidents and streets
-        performGetIncidentsRequest(email, jwtToken);
-        performGetStreetRequest(email, jwtToken);
+        LatLngBounds boundingBox = getMapBoundingBox();
+        performGetIncidentsRequest(email, jwtToken, boundingBox);
+        performGetStreetRequest(email, jwtToken, boundingBox);
     }
 
     private void handleLocationPermissionDenied() {
