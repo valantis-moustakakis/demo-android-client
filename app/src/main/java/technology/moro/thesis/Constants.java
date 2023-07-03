@@ -9,11 +9,11 @@ public class Constants {
     public static final String EMAIL_KEY = "thesis:email";
 
     public static final String EMAIL_ADDRESS_REGEX = "^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,10}$";
-//    public static final String PASSWORD_REGEX = "^(?=.*[A-Za-z])(?=.*\\d).{6,30}$";
+//    public static final String PASSWORD_REGEX = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,30}$";
     public static final String PASSWORD_REGEX = "^.*$";
 
-    public static final String BASE_URL = "http://192.168.1.128:8080/demo";
-//    public static final String BASE_URL = "https://34.28.182.12:8080/demo";
+    public static final String BASE_URL = "http://192.168.1.128:8443/demo";
+//    public static final String BASE_URL = "https://34.28.182.12:8443/demo";
     public static final String AUTHENTICATION_URL = "/authentication";
     public static final String REGISTRATION_URL = "/registration";
     public static final String REPORT_URL = "/report";
@@ -24,6 +24,5 @@ public class Constants {
 
     public static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX";
 
-    public static final int REQUEST_LOCATION_PERMISSION = 1;
     public static final long LOCATION_UPDATE_INTERVAL = 3000; // 3 seconds
 }

@@ -71,7 +71,7 @@ public class MeasurementService extends Service {
         createNotificationChannel();
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("Ramp")
+                .setContentTitle("RampBuddy")
                 .setContentText("Taking measurements...")
                 .setSmallIcon(R.drawable.ramp_logo)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT);

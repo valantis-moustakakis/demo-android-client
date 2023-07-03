@@ -7,6 +7,7 @@ import static technology.moro.thesis.Constants.EMAIL_KEY;
 import static technology.moro.thesis.Constants.GET_REPORTS_URL;
 import static technology.moro.thesis.Constants.GET_STREET_INFO_URL;
 import static technology.moro.thesis.Constants.JWT_TOKEN_KEY;
+import static technology.moro.thesis.Constants.LOCATION_UPDATE_INTERVAL;
 import static technology.moro.thesis.Constants.PREF_NAME;
 
 import android.Manifest;
@@ -121,9 +122,6 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // Permission is not granted, request it
             requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
-        } else {
-            // Permission is already granted, handle it
-            handleLocationPermissionGranted();
         }
     }
 
@@ -452,6 +450,8 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
 
         LocationRequest locationRequest = LocationRequest.create();
+        locationRequest.setInterval(LOCATION_UPDATE_INTERVAL);
+        locationRequest.setFastestInterval(LOCATION_UPDATE_INTERVAL);
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
         locationCallback = new LocationCallback() {
