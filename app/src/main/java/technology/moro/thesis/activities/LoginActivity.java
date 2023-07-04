@@ -122,7 +122,7 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call call, IOException e) {
                 e.printStackTrace();
-                showToast("Login failed");
+                showToast("Login failed!\nTry again later!");
             }
 
             @Override
@@ -134,7 +134,7 @@ public class LoginActivity extends AppCompatActivity {
                     saveToSharedPreferences(email, authenticationResponse.getToken());
                     navigateToHome();
                 } else {
-                    showToast("Login failed:\n" + authenticationResponse.getMessage());
+                    showToast(authenticationResponse.getMessage());
                 }
                 response.close();
             }

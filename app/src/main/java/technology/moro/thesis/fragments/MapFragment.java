@@ -97,6 +97,9 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
     private String jwtToken;
     private String email;
 
+    private List<MarkerOptions> streetMarkers = new ArrayList<>();
+    private List<MarkerOptions> incidentMarkers = new ArrayList<>();
+
     @SuppressLint("SimpleDateFormat")
     SimpleDateFormat dt = new SimpleDateFormat(DATE_FORMAT);
 
@@ -393,7 +396,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
                     break;
             }
 
-            mMap.addMarker(markerOptions);
+            addMarker(markerOptions, "INCIDENT");
         }
     }
 
@@ -411,21 +414,49 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
             // Set marker icon based on severity
             switch (street.getSeverity()) {
                 case "HIGH":
+                    markerOptions.title("Not Accessible");
                     markerOptions.icon(BitmapDescriptorFactory.fromBitmap(redDot));
                     break;
                 case "MEDIUM":
+                    markerOptions.title("Bumpy");
                     markerOptions.icon(BitmapDescriptorFactory.fromBitmap(orangeDot));
                     break;
                 case "LOW":
+                    markerOptions.title("Partially Smooth");
                     markerOptions.icon(BitmapDescriptorFactory.fromBitmap(yellowDot));
                     break;
                 case "NO_SEVERITY":
+                    markerOptions.title("Smooth");
                     markerOptions.icon(BitmapDescriptorFactory.fromBitmap(greenDot));
                     break;
             }
 
-            mMap.addMarker(markerOptions);
+            addMarker(markerOptions, "STREET");
         }
+    }
+
+    private void addMarker(MarkerOptions markerOptions, String type) {
+        switch (type) {
+            case "STREET":
+                if (!markerExistsInList(markerOptions, streetMarkers)) {
+                    streetMarkers.add(markerOptions);
+                    mMap.addMarker(markerOptions);
+                }
+            case "INCIDENT":
+                if (!markerExistsInList(markerOptions, incidentMarkers)) {
+                    incidentMarkers.add(markerOptions);
+                    mMap.addMarker(markerOptions);
+                }
+        }
+    }
+
+    private boolean markerExistsInList(MarkerOptions markerOptions, List<MarkerOptions> markers) {
+        for (MarkerOptions marker : markers) {
+            if (markerOptions.getPosition().equals(marker.getPosition())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @SuppressLint("UseCompatLoadingForDrawables")
@@ -571,6 +602,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         email = sharedPreferences.getString(EMAIL_KEY, "");
         // Perform the GET requests for incidents and streets
         LatLngBounds boundingBox = getMapBoundingBox();
+        mMap.clear();
         performGetIncidentsRequest(email, jwtToken, boundingBox);
         performGetStreetRequest(email, jwtToken, boundingBox);
     }

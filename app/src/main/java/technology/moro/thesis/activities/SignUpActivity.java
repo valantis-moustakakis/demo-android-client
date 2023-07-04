@@ -130,18 +130,18 @@ public class SignUpActivity extends AppCompatActivity {
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
                 e.printStackTrace();
-                showToast("Sign Up failed");
+                showToast("Sign Up failed!\nTry again later!");
             }
 
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
                 if (response.isSuccessful()) {
-                    navigateToLogin();
-                } else {
-                    String stringAuthenticationResponse = Objects.requireNonNull(response.body()).string();
-                    Gson gson = new Gson();
-                    AuthenticationResponseDTO authenticationResponse = gson.fromJson(stringAuthenticationResponse, AuthenticationResponseDTO.class);
-                    showToast("Sign Up failed:\n" + authenticationResponse.getMessage());
+                    String authenticationResponse = Objects.requireNonNull(response.body()).string();
+                    if ("OK".equals(authenticationResponse)) {
+                        navigateToLogin();
+                    } else {
+                        showToast("Sign Up failed:\n" + authenticationResponse);
+                    }
                 }
                 response.close();
             }
