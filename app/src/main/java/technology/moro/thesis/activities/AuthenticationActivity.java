@@ -2,7 +2,6 @@ package technology.moro.thesis.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Button;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -19,19 +18,8 @@ public class AuthenticationActivity extends AppCompatActivity {
         Button loginButton = findViewById(R.id.login_button);
         Button signUpButton = findViewById(R.id.signup_button);
 
-        loginButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                navigateToLogin();
-            }
-        });
-
-        signUpButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                navigateToSignUp();
-            }
-        });
+        loginButton.setOnClickListener(v -> navigateToLogin());
+        signUpButton.setOnClickListener(v -> navigateToSignUp());
     }
 
     private void navigateToLogin() {

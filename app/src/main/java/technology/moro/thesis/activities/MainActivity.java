@@ -31,12 +31,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Delayed execution to simulate loading or network request
         Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                checkAndNavigate();
-            }
-        }, 1000); // Adjust the delay time as needed
+        handler.postDelayed(this::checkAndNavigate, 1000);
     }
 
     private void checkAndNavigate() {

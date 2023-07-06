@@ -11,10 +11,10 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Email"
-        android:drawableLeft="@drawable/ic_email_icon"
+        android:text="@string/email"
         android:drawablePadding="@dimen/form_icon_padding"
-        android:textSize="30sp" />
+        android:textSize="30sp"
+        app:drawableLeftCompat="@drawable/ic_email_icon" />
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
@@ -34,10 +34,10 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Password"
-        android:drawableLeft="@drawable/ic_password_icon"
+        android:text="@string/password"
         android:drawablePadding="@dimen/form_icon_padding"
-        android:textSize="30sp" />
+        android:textSize="30sp"
+        app:drawableLeftCompat="@drawable/ic_password_icon" />
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
@@ -58,10 +58,10 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Confirm Password"
-        android:drawableLeft="@drawable/ic_password_icon"
+        android:text="@string/confirm_password"
         android:drawablePadding="@dimen/form_icon_padding"
-        android:textSize="30sp" />
+        android:textSize="30sp"
+        app:drawableLeftCompat="@drawable/ic_password_icon" />
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
@@ -83,7 +83,7 @@
         android:id="@+id/sign_up_button"
         android:layout_width="200dp"
         android:layout_height="90dp"
-        android:text="Sign Up"
+        android:text="@string/sign_up"
         android:layout_gravity="center"
         android:textSize="30sp" />
 

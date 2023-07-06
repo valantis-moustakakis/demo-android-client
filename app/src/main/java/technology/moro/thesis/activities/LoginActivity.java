@@ -6,11 +6,12 @@ import static technology.moro.thesis.Constants.EMAIL_KEY;
 import static technology.moro.thesis.Constants.JSON_MEDIA_TYPE;
 import static technology.moro.thesis.Constants.JWT_TOKEN_KEY;
 import static technology.moro.thesis.Constants.PREF_NAME;
+import static technology.moro.thesis.Utils.createSSLSocketFactory;
+import static technology.moro.thesis.Utils.createTrustManager;
 import static technology.moro.thesis.validators.CredentialsValidator.validateEmail;
 import static technology.moro.thesis.validators.CredentialsValidator.validatePassword;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -18,15 +19,16 @@ import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.gson.Gson;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -62,19 +64,20 @@ public class LoginActivity extends AppCompatActivity {
         Button loginButton = findViewById(R.id.login_button);
 
         sharedPreferences = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
-        httpClient = new OkHttpClient();
 
-        loginButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String email = emailEditText.getText().toString().trim();
-                String password = passwordEditText.getText().toString().trim();
+        httpClient = new OkHttpClient.Builder()
+                .sslSocketFactory(createSSLSocketFactory(), createTrustManager()[0])
+                .hostnameVerifier((hostname, session) -> true) // Bypass hostname verification
+                .build();
 
-                hideKeyboard();
+        loginButton.setOnClickListener(v -> {
+            String email = emailEditText.getText().toString().trim();
+            String password = passwordEditText.getText().toString().trim();
 
-                if (isInputValid(email, password)) {
-                    performLogin(email, password);
-                }
+            hideKeyboard();
+
+            if (isInputValid(email, password)) {
+                performLogin(email, password);
             }
         });
     }
@@ -93,14 +96,14 @@ public class LoginActivity extends AppCompatActivity {
     private boolean isInputValid(String email, String password) {
         boolean isValid = true;
         if (email.isEmpty() || !validateEmail(email)) {
-            emailTextInputLayout.setError("Invalid Email");
+            emailTextInputLayout.setError(getString(R.string.invalid_email));
             isValid = false;
         } else {
             emailTextInputLayout.setError(null);
         }
 
         if (password.isEmpty() || !validatePassword(password)) {
-            passwordTextInputLayout.setError("Invalid Password");
+            passwordTextInputLayout.setError(getString(R.string.invalid_password));
             isValid = false;
         } else {
             passwordTextInputLayout.setError(null);
@@ -120,14 +123,14 @@ public class LoginActivity extends AppCompatActivity {
 
         httpClient.newCall(request).enqueue(new Callback() {
             @Override
-            public void onFailure(Call call, IOException e) {
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
                 e.printStackTrace();
-                showToast("Login failed!\nTry again later!");
+                showToast(getString(R.string.login_failed_not_available));
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                String stringAuthenticationResponse = response.body().string();
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                String stringAuthenticationResponse = Objects.requireNonNull(response.body()).string();
                 Gson gson = new Gson();
                 AuthenticationResponseDTO authenticationResponse = gson.fromJson(stringAuthenticationResponse, AuthenticationResponseDTO.class);
                 if (response.isSuccessful()) {
@@ -156,12 +159,9 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void showToast(final String message) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                Toast t = Toast.makeText(LoginActivity.this, message, Toast.LENGTH_LONG);
-                t.show();
-            }
+        runOnUiThread(() -> {
+            Toast t = Toast.makeText(LoginActivity.this, message, Toast.LENGTH_LONG);
+            t.show();
         });
     }
 }

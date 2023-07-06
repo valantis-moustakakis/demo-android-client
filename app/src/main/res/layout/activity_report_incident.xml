@@ -10,7 +10,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Severity"
+        android:text="@string/severity"
         android:layout_marginTop="20dp"
         android:textSize="30sp" />
 
@@ -25,7 +25,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Description"
+        android:text="@string/description"
         android:textSize="30sp" />
 
     <EditText
@@ -40,7 +40,7 @@
         android:id="@+id/report_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Report"
+        android:text="@string/report"
         android:layout_marginTop="16dp"
         android:textSize="30sp" />
 

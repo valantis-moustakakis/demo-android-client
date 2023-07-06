@@ -2,7 +2,10 @@ package technology.moro.thesis.activities;
 
 import static technology.moro.thesis.Constants.BASE_URL;
 import static technology.moro.thesis.Constants.JSON_MEDIA_TYPE;
+import static technology.moro.thesis.Constants.OK_RESPONSE;
 import static technology.moro.thesis.Constants.REGISTRATION_URL;
+import static technology.moro.thesis.Utils.createSSLSocketFactory;
+import static technology.moro.thesis.Utils.createTrustManager;
 import static technology.moro.thesis.validators.CredentialsValidator.validateConfirmPassword;
 import static technology.moro.thesis.validators.CredentialsValidator.validateEmail;
 import static technology.moro.thesis.validators.CredentialsValidator.validatePassword;
@@ -20,7 +23,6 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.textfield.TextInputLayout;
-import com.google.gson.Gson;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -33,7 +35,6 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import technology.moro.thesis.R;
 import technology.moro.thesis.dtos.AuthenticationDTO;
-import technology.moro.thesis.dtos.AuthenticationResponseDTO;
 
 public class SignUpActivity extends AppCompatActivity {
 
@@ -62,20 +63,20 @@ public class SignUpActivity extends AppCompatActivity {
 
         Button signUpButton = findViewById(R.id.sign_up_button);
 
-        httpClient = new OkHttpClient();
+        httpClient = new OkHttpClient.Builder()
+                .sslSocketFactory(createSSLSocketFactory(), createTrustManager()[0])
+                .hostnameVerifier((hostname, session) -> true) // Bypass hostname verification
+                .build();
 
-        signUpButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String email = emailEditText.getText().toString().trim();
-                String password = passwordEditText.getText().toString().trim();
-                String confirmPassword = confirmPasswordEditText.getText().toString().trim();
+        signUpButton.setOnClickListener(v -> {
+            String email = emailEditText.getText().toString().trim();
+            String password = passwordEditText.getText().toString().trim();
+            String confirmPassword = confirmPasswordEditText.getText().toString().trim();
 
-                hideKeyboard();
+            hideKeyboard();
 
-                if (isInputValid(email, password, confirmPassword)) {
-                    performSignUp(email, password, confirmPassword);
-                }
+            if (isInputValid(email, password, confirmPassword)) {
+                performSignUp(email, password, confirmPassword);
             }
         });
     }
@@ -94,21 +95,21 @@ public class SignUpActivity extends AppCompatActivity {
     private boolean isInputValid(String email, String password, String confirmPassword) {
         boolean isValid = true;
         if (email.isEmpty() || !validateEmail(email)) {
-            emailTextInputLayout.setError("Invalid Email");
+            emailTextInputLayout.setError(getString(R.string.invalid_email));
             isValid = false;
         } else {
             emailTextInputLayout.setError(null);
         }
 
         if (password.isEmpty() || !validatePassword(password)) {
-            passwordTextInputLayout.setError("Password must be between 7 and 30 characters long");
+            passwordTextInputLayout.setError(getString(R.string.password_rules_error));
             isValid = false;
         } else {
             passwordTextInputLayout.setError(null);
         }
 
         if (confirmPassword.isEmpty() || !validateConfirmPassword(password, confirmPassword)) {
-            confirmPasswordTextInputLayout.setError("Passwords do not match");
+            confirmPasswordTextInputLayout.setError(getString(R.string.passwords_do_not_match));
             isValid = false;
         } else {
             confirmPasswordTextInputLayout.setError(null);
@@ -130,14 +131,14 @@ public class SignUpActivity extends AppCompatActivity {
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
                 e.printStackTrace();
-                showToast("Sign Up failed!\nTry again later!");
+                showToast(getString(R.string.sign_up_failed_not_available));
             }
 
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
                 if (response.isSuccessful()) {
                     String authenticationResponse = Objects.requireNonNull(response.body()).string();
-                    if ("OK".equals(authenticationResponse)) {
+                    if (OK_RESPONSE.equals(authenticationResponse)) {
                         navigateToLogin();
                     } else {
                         showToast("Sign Up failed:\n" + authenticationResponse);
@@ -156,12 +157,9 @@ public class SignUpActivity extends AppCompatActivity {
     }
 
     private void showToast(final String message) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                Toast t = Toast.makeText(SignUpActivity.this, message, Toast.LENGTH_LONG);
-                t.show();
-            }
+        runOnUiThread(() -> {
+            Toast t = Toast.makeText(SignUpActivity.this, message, Toast.LENGTH_LONG);
+            t.show();
         });
     }
 }

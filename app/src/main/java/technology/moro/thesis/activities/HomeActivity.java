@@ -7,7 +7,6 @@ import static technology.moro.thesis.Constants.PREF_NAME;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Button;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -30,33 +29,10 @@ public class HomeActivity extends AppCompatActivity {
 
         sharedPreferences = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
 
-        measurementButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                navigateToMeasurement();
-            }
-        });
-
-        reportButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                navigateToReportIncident();
-            }
-        });
-
-        mapButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                navigateToMap();
-            }
-        });
-
-        logoutButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                logout();
-            }
-        });
+        measurementButton.setOnClickListener(v -> navigateToMeasurement());
+        reportButton.setOnClickListener(v -> navigateToReportIncident());
+        mapButton.setOnClickListener(v -> navigateToMap());
+        logoutButton.setOnClickListener(v -> logout());
     }
 
     private void navigateToMeasurement() {

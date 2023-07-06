@@ -37,7 +37,7 @@
             android:label="Register" />
         <activity
             android:name=".activities.MapActivity"
-            android:label="Results Display" />
+            android:label="Trails and Reports Information" />
         <activity
             android:name=".activities.MeasurementActivity"
             android:label="Pavement Surface Monitoring" />

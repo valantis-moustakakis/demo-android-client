@@ -1,6 +1,11 @@
 package technology.moro.thesis.services;
 
+import static technology.moro.thesis.Constants.ACCURACY;
+import static technology.moro.thesis.Constants.LATITUDE;
 import static technology.moro.thesis.Constants.LOCATION_UPDATE_INTERVAL;
+import static technology.moro.thesis.Constants.LONGITUDE;
+import static technology.moro.thesis.Constants.START_FOREGROUND_ACTION;
+import static technology.moro.thesis.Constants.STOP_FOREGROUND_ACTION;
 
 import android.Manifest;
 import android.app.Notification;
@@ -35,7 +40,7 @@ public class MeasurementService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         FusedLocationProviderClient fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-        if ("START_FOREGROUND_ACTION".equals(intent.getAction())) {
+        if (START_FOREGROUND_ACTION.equals(intent.getAction())) {
             startForeground(NOTIFICATION_ID, createNotification());
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                 LocationRequest locationRequest = LocationRequest.create();
@@ -46,7 +51,7 @@ public class MeasurementService extends Service {
                 fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
             }
 
-        } else if ("STOP_FOREGROUND_ACTION".equals(intent.getAction())) {
+        } else if (STOP_FOREGROUND_ACTION.equals(intent.getAction())) {
             stopForeground(true);
             stopSelfResult(startId);
             fusedLocationClient.removeLocationUpdates(locationCallback);
@@ -59,9 +64,9 @@ public class MeasurementService extends Service {
         public void onLocationResult(@NonNull LocationResult locationResult) {
             for (Location location : locationResult.getLocations()) {
                 Intent intent = new Intent("location_update");
-                intent.putExtra("latitude", location.getLatitude());
-                intent.putExtra("longitude", location.getLongitude());
-                intent.putExtra("accuracy", location.getAccuracy());
+                intent.putExtra(LATITUDE, location.getLatitude());
+                intent.putExtra(LONGITUDE, location.getLongitude());
+                intent.putExtra(ACCURACY, location.getAccuracy());
                 LocalBroadcastManager.getInstance(MeasurementService.this).sendBroadcast(intent);
             }
         }
@@ -71,8 +76,8 @@ public class MeasurementService extends Service {
         createNotificationChannel();
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("RampBuddy")
-                .setContentText("Taking measurements...")
+                .setContentTitle(getString(R.string.app_name))
+                .setContentText(getString(R.string.monitoring))
                 .setSmallIcon(R.drawable.ramp_logo)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT);
 

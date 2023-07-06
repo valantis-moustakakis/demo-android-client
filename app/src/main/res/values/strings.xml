@@ -1,5 +1,52 @@
 <resources>
     <string name="app_name">RampBuddy</string>
+
+    <string name="invalid_email">Invalid Email</string>
+    <string name="invalid_password">Invalid Password</string>
+    <string name="login_failed_not_available">Login failed!\nServer is not available.</string>
+    <string name="sign_up_failed_not_available">Sign Up failed!\nServer is not available.</string>
+    <string name="password_rules_error">Password must be between 7 and 30 characters long</string>
+    <string name="passwords_do_not_match">Passwords do not match</string>
+    <string name="failed_incident_report">Failed to report incident</string>
+    <string name="failed_incident_report_not_available">Failed to report incident!\nServer is not available.</string>
+    <string name="successful_incident_report">Incident reported successfully</string>
+    <string name="location_is_disabled">Location is disabled. Map cannot be used.</string>
+    <string name="location_permission">Location Permission</string>
+    <string name="cancel">Cancel</string>
+    <string name="grant_permission">Grant Permission</string>
+    <string name="no_location_message">This app requires access to your location to provide accurate results.</string>
+    <string name="permission_denied">Permission Denied</string>
+    <string name="open_settings">Open Settings</string>
+    <string name="user_denied_location_permission">You have denied location permission. To enable this feature, please grant the permission from the app settings.</string>
+    <string name="failed_to_fetch_incidents">Failed to fetch incidents</string>
+    <string name="failed_to_fetch_street_info">Failed to fetch street info</string>
+    <string name="not_accessible">Not Accessible</string>
+    <string name="bumpy">Bumpy</string>
+    <string name="partially_smooth">Partially Smooth</string>
+    <string name="smooth">Smooth</string>
+    <string name="start_elapsed_time">Elapsed Time: 00:00:00</string>
+    <string name="did_you_reach_your_destination">Did you reach your destination?</string>
+    <string name="stop_measurement_message">If yes, please stop the monitoring or close the app!</string>
+    <string name="monitoring">Monitoring the pavement surface...</string>
+    <string name="gps_signal_weak">Weak</string>
+    <string name="gps_signal_strong">Strong</string>
+    <string name="gps_signal_label">GPS signal: </string>
+    <string name="welcome_to_rampbuddy">Welcome to RampBuddy</string>
+    <string name="login">Login</string>
+    <string name="sign_up">Sign Up</string>
+    <string name="monitor_pavement_surface">Monitor Pavement Surface</string>
+    <string name="report_an_incident">Report an Incident</string>
+    <string name="map">Map</string>
+    <string name="logout">Logout</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="gps_signal_empty">GPS signal: -</string>
+    <string name="start">Start</string>
+    <string name="stop">Stop</string>
+    <string name="severity">Severity</string>
+    <string name="description">Description</string>
+    <string name="report">Report</string>
+    <string name="confirm_password">Confirm Password</string>
     <string-array name="severity_array">
         <item>Low</item>
         <item>Medium</item>

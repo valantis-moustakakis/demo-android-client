@@ -12,7 +12,7 @@
         android:id="@+id/measurement_button"
         android:layout_width="match_parent"
         android:layout_height="100dp"
-        android:text="Monitor Pavement Surface"
+        android:text="@string/monitor_pavement_surface"
         android:layout_marginBottom="50dp"
         android:textSize="30sp" />
 
@@ -20,7 +20,7 @@
         android:id="@+id/report_button"
         android:layout_width="match_parent"
         android:layout_height="100dp"
-        android:text="Report an Incident"
+        android:text="@string/report_an_incident"
         android:layout_marginBottom="50dp"
         android:textSize="30sp" />
 
@@ -28,7 +28,7 @@
         android:id="@+id/map_button"
         android:layout_width="match_parent"
         android:layout_height="100dp"
-        android:text="Map"
+        android:text="@string/map"
         android:layout_marginBottom="50dp"
         android:textSize="30sp" />
 
@@ -36,7 +36,7 @@
         android:id="@+id/logout_button"
         android:layout_width="match_parent"
         android:layout_height="100dp"
-        android:text="Logout"
+        android:text="@string/logout"
         android:textSize="30sp" />
 
 </LinearLayout>

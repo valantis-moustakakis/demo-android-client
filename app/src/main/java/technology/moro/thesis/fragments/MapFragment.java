@@ -1,19 +1,31 @@
 package technology.moro.thesis.fragments;
 
 import static android.content.Context.MODE_PRIVATE;
+import static technology.moro.thesis.Constants.ACCURACY;
+import static technology.moro.thesis.Constants.AUTHORIZATION_HEADER;
 import static technology.moro.thesis.Constants.BASE_URL;
+import static technology.moro.thesis.Constants.BEARER_PREFIX;
 import static technology.moro.thesis.Constants.DATE_FORMAT;
 import static technology.moro.thesis.Constants.EMAIL_KEY;
 import static technology.moro.thesis.Constants.GET_REPORTS_URL;
 import static technology.moro.thesis.Constants.GET_STREET_INFO_URL;
+import static technology.moro.thesis.Constants.INCIDENT_IDENTIFICATION;
 import static technology.moro.thesis.Constants.JWT_TOKEN_KEY;
+import static technology.moro.thesis.Constants.LATITUDE;
 import static technology.moro.thesis.Constants.LOCATION_UPDATE_INTERVAL;
+import static technology.moro.thesis.Constants.LONGITUDE;
 import static technology.moro.thesis.Constants.PREF_NAME;
+import static technology.moro.thesis.Constants.SEVERITY_HIGH;
+import static technology.moro.thesis.Constants.SEVERITY_LOW;
+import static technology.moro.thesis.Constants.SEVERITY_MEDIUM;
+import static technology.moro.thesis.Constants.SEVERITY_NO_SEVERITY;
+import static technology.moro.thesis.Constants.STREET_IDENTIFICATION;
+import static technology.moro.thesis.Utils.createSSLSocketFactory;
+import static technology.moro.thesis.Utils.createTrustManager;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -26,7 +38,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
-import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -45,6 +56,7 @@ import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.Priority;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -67,6 +79,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -75,13 +88,12 @@ import okhttp3.Request;
 import okhttp3.Response;
 import technology.moro.thesis.R;
 import technology.moro.thesis.activities.HomeActivity;
-import technology.moro.thesis.dtos.Incident;
-import technology.moro.thesis.dtos.StreetInfo;
+import technology.moro.thesis.dtos.IncidentDTO;
+import technology.moro.thesis.dtos.StreetInfoDTO;
 
 public class MapFragment extends SupportMapFragment implements OnMapReadyCallback, GoogleMap.OnCameraChangeListener, ActivityResultCallback<Boolean> {
 
     private static final int REQUEST_LOCATION_PERMISSION = 1;
-    private ActivityResultLauncher<String> requestPermissionLauncher;
 
     private GoogleMap mMap;
     private FusedLocationProviderClient fusedLocationClient;
@@ -97,8 +109,8 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
     private String jwtToken;
     private String email;
 
-    private List<MarkerOptions> streetMarkers = new ArrayList<>();
-    private List<MarkerOptions> incidentMarkers = new ArrayList<>();
+    private final List<MarkerOptions> streetMarkers = new ArrayList<>();
+    private final List<MarkerOptions> incidentMarkers = new ArrayList<>();
 
     @SuppressLint("SimpleDateFormat")
     SimpleDateFormat dt = new SimpleDateFormat(DATE_FORMAT);
@@ -114,12 +126,16 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         super.onCreate(savedInstanceState);
 
         sharedPreferences = requireActivity().getSharedPreferences(PREF_NAME, MODE_PRIVATE);
-        httpClient = new OkHttpClient();
+
+        httpClient = new OkHttpClient.Builder()
+                .sslSocketFactory(createSSLSocketFactory(), createTrustManager()[0])
+                .hostnameVerifier((hostname, session) -> true) // Bypass hostname verification
+                .build();
 
         cameraChangeHandler = new Handler(Looper.getMainLooper());
         cameraChangeInProgress = false;
 
-        requestPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), this);
+        ActivityResultLauncher<String> requestPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), this);
 
         // Check if location permission is granted
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -129,19 +145,20 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
     }
 
     @Override
-    public void onMapReady(GoogleMap googleMap) {
+    public void onMapReady(@NonNull GoogleMap googleMap) {
         mMap = googleMap;
         mMap.setOnCameraChangeListener(this);
         // Create a custom info window adapter
         mMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
             @Override
-            public View getInfoWindow(Marker marker) {
+            public View getInfoWindow(@NonNull Marker marker) {
                 return null; // Return null to use the default info window
             }
 
             @Override
-            public View getInfoContents(Marker marker) {
+            public View getInfoContents(@NonNull Marker marker) {
                 // Inflate the custom info window layout
+                @SuppressLint("InflateParams")
                 View view = getLayoutInflater().inflate(R.layout.custom_info_window, null);
 
                 // Find the views in the custom info window layout
@@ -165,7 +182,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         boolean isLocationEnabled = isLocationEnabled();
         if (!isLocationEnabled) {
             // Location is disabled, show a toast message and navigate back to HomeActivity
-            Toast.makeText(requireActivity(), "Location is disabled. Map cannot be used.", Toast.LENGTH_LONG).show();
+            Toast.makeText(requireActivity(), getString(R.string.location_is_disabled), Toast.LENGTH_LONG).show();
             navigateToHomeActivity();
             return;
         }
@@ -189,21 +206,15 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
     // Show a dialog explaining why the location permission is required
     private void showPermissionRationaleDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-        builder.setTitle("Location Permission")
-                .setMessage("This app requires access to your location to provide accurate results.")
-                .setPositiveButton("Grant Permission", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        // Request location permission again
-                        ActivityCompat.requestPermissions(requireActivity(), new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION_PERMISSION);
-                    }
+        builder.setTitle(getString(R.string.location_permission))
+                .setMessage(getString(R.string.no_location_message))
+                .setPositiveButton(getString(R.string.grant_permission), (dialogInterface, i) -> {
+                    // Request location permission again
+                    ActivityCompat.requestPermissions(requireActivity(), new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION_PERMISSION);
                 })
-                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        // User has denied the permission, navigate back to the previous activity or exit the app
-                        navigateToPreviousActivity();
-                    }
+                .setNegativeButton(getString(R.string.cancel), (dialogInterface, i) -> {
+                    // User has denied the permission, navigate back to the previous activity or exit the app
+                    navigateToPreviousActivity();
                 })
                 .setCancelable(false)
                 .show();
@@ -212,20 +223,12 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
     // Show a dialog informing the user about denied permission and providing an option to open app settings
     private void showPermissionDeniedDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-        builder.setTitle("Permission Denied")
-                .setMessage("You have denied location permission. To enable this feature, please grant the permission from the app settings.")
-                .setPositiveButton("Open Settings", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        openAppSettings();
-                    }
-                })
-                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        // User has denied the permission, navigate back to the previous activity or exit the app
-                        navigateToPreviousActivity();
-                    }
+        builder.setTitle(getString(R.string.permission_denied))
+                .setMessage(getString(R.string.user_denied_location_permission))
+                .setPositiveButton(getString(R.string.open_settings), (dialogInterface, i) -> openAppSettings())
+                .setNegativeButton(getString(R.string.cancel), (dialogInterface, i) -> {
+                    // User has denied the permission, navigate back to the previous activity or exit the app
+                    navigateToPreviousActivity();
                 })
                 .setCancelable(false)
                 .show();
@@ -264,27 +267,27 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
 
         Request request = new Request.Builder()
                 .url(BASE_URL + GET_REPORTS_URL + params)
-                .addHeader("Authorization", "Bearer " + jwtToken)
+                .addHeader(AUTHORIZATION_HEADER, BEARER_PREFIX + jwtToken)
                 .build();
 
         httpClient.newCall(request).enqueue(new Callback() {
             @Override
-            public void onFailure(Call call, IOException e) {
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
                 e.printStackTrace();
-                showToast("Failed to fetch incidents");
+                showToast(getString(R.string.failed_to_fetch_incidents));
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
                 if (response.isSuccessful()) {
-                    String responseData = response.body().string();
+                    String responseData = Objects.requireNonNull(response.body()).string();
                     // Parse the response data and extract the incident information
-                    List<Incident> incidents = parseIncidents(responseData);
+                    List<IncidentDTO> incidents = parseIncidents(responseData);
 
                     // Add markers to the map for each incident
                     requireActivity().runOnUiThread(() -> addIncidentMarkers(incidents));
                 } else {
-                    showToast("Failed to fetch incidents");
+                    showToast(getString(R.string.failed_to_fetch_incidents));
                 }
             }
         });
@@ -301,35 +304,35 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
 
         Request request = new Request.Builder()
                 .url(BASE_URL + GET_STREET_INFO_URL + params)
-                .addHeader("Authorization", "Bearer " + jwtToken)
+                .addHeader(AUTHORIZATION_HEADER, BEARER_PREFIX + jwtToken)
                 .build();
 
         httpClient.newCall(request).enqueue(new Callback() {
             @Override
-            public void onFailure(Call call, IOException e) {
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
                 e.printStackTrace();
-                showToast("Failed to fetch street info");
+                showToast(getString(R.string.failed_to_fetch_street_info));
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
                 if (response.isSuccessful()) {
-                    String responseData = response.body().string();
+                    String responseData = Objects.requireNonNull(response.body()).string();
                     // Parse the response data and extract the street information
-                    List<StreetInfo> streets = parseStreets(responseData);
+                    List<StreetInfoDTO> streets = parseStreets(responseData);
 
                     // Add markers to the map for each street
                     requireActivity().runOnUiThread(() -> addStreetMarkers(streets));
                 } else {
-                    showToast("Failed to fetch street info");
+                    showToast(getString(R.string.failed_to_fetch_street_info));
                 }
             }
         });
     }
 
-    private List<Incident> parseIncidents(String responseData) {
+    private List<IncidentDTO> parseIncidents(String responseData) {
         // Parse the JSON response data and create a list of Incident objects
-        List<Incident> incidents = new ArrayList<>();
+        List<IncidentDTO> incidents = new ArrayList<>();
         try {
             JSONArray jsonArray = new JSONArray(responseData);
             for (int i = 0; i < jsonArray.length(); i++) {
@@ -343,7 +346,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
                 float longitude = (float) jsonIncident.getDouble("longitude");
                 Date reportDate = dt.parse(jsonIncident.getString("reportDate"));
 
-                Incident incident = new Incident(reportId, userEmail, severity, description, latitude, longitude, reportDate);
+                IncidentDTO incident = new IncidentDTO(reportId, userEmail, severity, description, latitude, longitude, reportDate);
                 incidents.add(incident);
             }
         } catch (JSONException | ParseException e) {
@@ -353,8 +356,8 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         return incidents;
     }
 
-    private List<StreetInfo> parseStreets(String responseData) {
-        List<StreetInfo> streets = new ArrayList<>();
+    private List<StreetInfoDTO> parseStreets(String responseData) {
+        List<StreetInfoDTO> streets = new ArrayList<>();
         try {
             JSONArray jsonArray = new JSONArray(responseData);
             for (int i = 0; i < jsonArray.length(); i++) {
@@ -364,7 +367,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
                 float latitude = (float) jsonStreet.getDouble("latitude");
                 float longitude = (float) jsonStreet.getDouble("longitude");
 
-                StreetInfo street = new StreetInfo(severity, latitude, longitude);
+                StreetInfoDTO street = new StreetInfoDTO(severity, latitude, longitude);
                 streets.add(street);
             }
         } catch (JSONException e) {
@@ -374,9 +377,10 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         return streets;
     }
 
-    private void addIncidentMarkers(List<Incident> incidents) {
+    private void addIncidentMarkers(List<IncidentDTO> incidents) {
+        @SuppressLint("SimpleDateFormat")
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
-        for (Incident incident : incidents) {
+        for (IncidentDTO incident : incidents) {
             LatLng latLng = new LatLng(incident.getLatitude(), incident.getLongitude());
             MarkerOptions markerOptions = new MarkerOptions()
                     .position(latLng)
@@ -385,78 +389,78 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
 
             // Set marker icon based on severity
             switch (incident.getSeverity()) {
-                case "HIGH":
+                case SEVERITY_HIGH:
                     markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
                     break;
-                case "MEDIUM":
+                case SEVERITY_MEDIUM:
                     markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE));
                     break;
-                case "LOW":
+                case SEVERITY_LOW:
                     markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW));
                     break;
             }
 
-            addMarker(markerOptions, "INCIDENT");
+            addMarker(markerOptions, INCIDENT_IDENTIFICATION);
         }
     }
 
-    private void addStreetMarkers(List<StreetInfo> streets) {
+    private void addStreetMarkers(List<StreetInfoDTO> streets) {
         Bitmap redDot = getBitmap(R.drawable.red_dot);
         Bitmap orangeDot = getBitmap(R.drawable.orange_dot);
         Bitmap yellowDot = getBitmap(R.drawable.yellow_dot);
         Bitmap greenDot = getBitmap(R.drawable.green_dot);
 
-        for (StreetInfo street : streets) {
+        for (StreetInfoDTO street : streets) {
             LatLng latLng = new LatLng(street.getLatitude(), street.getLongitude());
             MarkerOptions markerOptions = new MarkerOptions()
                     .position(latLng);
 
             // Set marker icon based on severity
             switch (street.getSeverity()) {
-                case "HIGH":
-                    markerOptions.title("Not Accessible");
+                case SEVERITY_HIGH:
+                    markerOptions.title(getString(R.string.not_accessible));
                     markerOptions.icon(BitmapDescriptorFactory.fromBitmap(redDot));
                     break;
-                case "MEDIUM":
-                    markerOptions.title("Bumpy");
+                case SEVERITY_MEDIUM:
+                    markerOptions.title(getString(R.string.bumpy));
                     markerOptions.icon(BitmapDescriptorFactory.fromBitmap(orangeDot));
                     break;
-                case "LOW":
-                    markerOptions.title("Partially Smooth");
+                case SEVERITY_LOW:
+                    markerOptions.title(getString(R.string.partially_smooth));
                     markerOptions.icon(BitmapDescriptorFactory.fromBitmap(yellowDot));
                     break;
-                case "NO_SEVERITY":
-                    markerOptions.title("Smooth");
+                case SEVERITY_NO_SEVERITY:
+                    markerOptions.title(getString(R.string.smooth));
                     markerOptions.icon(BitmapDescriptorFactory.fromBitmap(greenDot));
                     break;
             }
 
-            addMarker(markerOptions, "STREET");
+            addMarker(markerOptions, STREET_IDENTIFICATION);
         }
     }
 
     private void addMarker(MarkerOptions markerOptions, String type) {
         switch (type) {
-            case "STREET":
-                if (!markerExistsInList(markerOptions, streetMarkers)) {
+            case STREET_IDENTIFICATION:
+                if (isNewMarker(markerOptions, streetMarkers)) {
                     streetMarkers.add(markerOptions);
                     mMap.addMarker(markerOptions);
                 }
-            case "INCIDENT":
-                if (!markerExistsInList(markerOptions, incidentMarkers)) {
+            case INCIDENT_IDENTIFICATION:
+                if (isNewMarker(markerOptions, incidentMarkers)) {
                     incidentMarkers.add(markerOptions);
                     mMap.addMarker(markerOptions);
                 }
         }
     }
 
-    private boolean markerExistsInList(MarkerOptions markerOptions, List<MarkerOptions> markers) {
+    private boolean isNewMarker(MarkerOptions markerOptions, List<MarkerOptions> markers) {
         for (MarkerOptions marker : markers) {
             if (markerOptions.getPosition().equals(marker.getPosition())) {
-                return true;
+                return false;
             }
         }
-        return false;
+        return true;
     }
 
     @SuppressLint("UseCompatLoadingForDrawables")
@@ -482,7 +486,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         LocationRequest locationRequest = LocationRequest.create();
         locationRequest.setInterval(LOCATION_UPDATE_INTERVAL);
         locationRequest.setFastestInterval(LOCATION_UPDATE_INTERVAL);
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        locationRequest.setPriority(Priority.PRIORITY_HIGH_ACCURACY);
 
         locationCallback = new LocationCallback() {
             @Override
@@ -495,9 +499,9 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
                         firstLocation = false;
                     }
                     Intent intent = new Intent("map_location_update");
-                    intent.putExtra("latitude", location.getLatitude());
-                    intent.putExtra("longitude", location.getLongitude());
-                    intent.putExtra("accuracy", location.getAccuracy());
+                    intent.putExtra(LATITUDE, location.getLatitude());
+                    intent.putExtra(LONGITUDE, location.getLongitude());
+                    intent.putExtra(ACCURACY, location.getAccuracy());
                     LocalBroadcastManager.getInstance(requireContext()).sendBroadcast(intent);
                 }
             }
@@ -549,12 +553,9 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
     private void showToast(final String message) {
         Activity activity = getActivity();
         if (activity != null) {
-            activity.runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Toast t = Toast.makeText(requireActivity(), message, Toast.LENGTH_LONG);
-                    t.show();
-                }
+            activity.runOnUiThread(() -> {
+                Toast t = Toast.makeText(requireActivity(), message, Toast.LENGTH_LONG);
+                t.show();
             });
         }
     }
@@ -571,12 +572,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
             cameraChangeInProgress = true;
 
             // Schedule a delayed task to reset the flag after 1 second
-            cameraChangeHandler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    cameraChangeInProgress = false;
-                }
-            }, 2000);
+            cameraChangeHandler.postDelayed(() -> cameraChangeInProgress = false, 2000);
         }
     }
 

@@ -1,7 +1,16 @@
 package technology.moro.thesis.activities;
 
+import static technology.moro.thesis.Constants.ACCURACY;
 import static technology.moro.thesis.Constants.EMAIL_KEY;
+import static technology.moro.thesis.Constants.LATITUDE;
+import static technology.moro.thesis.Constants.LONGITUDE;
+import static technology.moro.thesis.Constants.MQTT_BROKER_PASSWORD;
+import static technology.moro.thesis.Constants.MQTT_BROKER_TOPIC;
+import static technology.moro.thesis.Constants.MQTT_BROKER_URL;
+import static technology.moro.thesis.Constants.MQTT_BROKER_USERNAME;
 import static technology.moro.thesis.Constants.PREF_NAME;
+import static technology.moro.thesis.Constants.START_FOREGROUND_ACTION;
+import static technology.moro.thesis.Constants.STOP_FOREGROUND_ACTION;
 
 import android.annotation.SuppressLint;
 import android.app.Notification;
@@ -20,7 +29,6 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Handler;
-import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -46,16 +54,12 @@ import technology.moro.thesis.R;
 import technology.moro.thesis.dtos.TransmissionDataDTO;
 import technology.moro.thesis.fragments.MapFragment;
 import technology.moro.thesis.services.MeasurementService;
-import timber.log.Timber;
 
 public class MeasurementActivity extends AppCompatActivity implements SensorEventListener {
-    private static final String TAG = "!===== MeasurementActivity =====!";
-
     private String email;
 
     private LatLng currentLocation;
     private BroadcastReceiver backgroundLocationUpdateReceiver;
-    private IntentFilter backgroundLocationUpdateReceiverFilter;
     private BroadcastReceiver locationUpdateReceiver;
     private IntentFilter locationUpdateReceiverFilter;
 
@@ -97,7 +101,7 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         email = sharedPreferences.getString(EMAIL_KEY, "");
 
         backgroundLocationUpdateReceiver = new LocationUpdateReceiver();
-        backgroundLocationUpdateReceiverFilter = new IntentFilter("location_update");
+        IntentFilter backgroundLocationUpdateReceiverFilter = new IntentFilter("location_update");
         LocalBroadcastManager.getInstance(this).registerReceiver(backgroundLocationUpdateReceiver, backgroundLocationUpdateReceiverFilter);
         locationUpdateReceiver = new LocationUpdateReceiver();
         locationUpdateReceiverFilter = new IntentFilter("map_location_update");
@@ -115,19 +119,8 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         disableButton(startButton);
         disableButton(stopButton);
 
-        startButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startMeasurement();
-            }
-        });
-
-        stopButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                stopMeasurement();
-            }
-        });
+        startButton.setOnClickListener(v -> startMeasurement());
+        stopButton.setOnClickListener(v -> stopMeasurement());
 
         notificationToBeSent = NOTIFICATION_THRESHOLD;
         createNotificationChannel();
@@ -135,7 +128,6 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
 
     @SuppressLint("LongLogTag")
     private void startMeasurement() {
-        Timber.tag(TAG).v("Starting measurements...");
         isMeasuring = true;
         disableButton(startButton);
         enableButton(stopButton);
@@ -144,12 +136,10 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         startMessageSending();
         LocalBroadcastManager.getInstance(this).unregisterReceiver(locationUpdateReceiver);
         startForegroundMeasurementService();
-        Timber.tag(TAG).v("Measurements started!");
     }
 
     @SuppressLint("LongLogTag")
     private void stopMeasurement() {
-        Timber.tag(TAG).v("Stopping measurements...");
         isMeasuring = false;
         elapsedSeconds = 0;
         data.clear();
@@ -162,23 +152,18 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         stopForegroundMeasurementService();
         LocalBroadcastManager.getInstance(this).registerReceiver(locationUpdateReceiver, locationUpdateReceiverFilter);
         resetValues();
-        Timber.tag(TAG).v("Measurements stopped!");
     }
 
     @SuppressLint("LongLogTag")
     private void startMessageSending() {
-        Timber.tag(TAG).v("Starting messages transmission...");
         messageHandler = new Handler();
         messageHandler.postDelayed(messageRunnable, MESSAGE_SEND_INTERVAL);
-        Timber.tag(TAG).v("Messages transmission started!");
     }
 
     @SuppressLint("LongLogTag")
     private void stopMessageSending() {
-        Timber.tag(TAG).v("Stopping messages transmission...");
         if (messageHandler != null) {
             messageHandler.removeCallbacks(messageRunnable);
-            Timber.tag(TAG).v("Messages transmission stopped!");
         }
     }
 
@@ -197,15 +182,12 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
 
     @SuppressLint("LongLogTag")
     private void publishMqttMessage(String payload) {
-        Timber.tag(TAG).v("Publishing mqtt message to broker...");
-        String topic = "measurements";
-        mqttClient.publish(topic, payload.getBytes(), 1, true);
-        Timber.tag(TAG).v("Mqtt message published!");
+        mqttClient.publish(MQTT_BROKER_TOPIC, payload.getBytes(), 1, true);
     }
 
     @SuppressLint("SetTextI18n")
     private void resetValues() {
-        elapsedTimeTextView.setText("Elapsed Time: 00:00:00");
+        elapsedTimeTextView.setText(getString(R.string.start_elapsed_time));
     }
 
     private final Runnable accelerometerRunnable = new Runnable() {
@@ -246,89 +228,67 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
 
     @SuppressLint("LongLogTag")
     private void startAccelerometerUpdates() {
-        Timber.tag(TAG).v("Starting accelerometer updates...");
         accelerometerHandler = new Handler();
         accelerometerHandler.post(accelerometerRunnable);
         sensorManager.registerListener(this, accelerometerSensor, SensorManager.SENSOR_DELAY_NORMAL);
-        Timber.tag(TAG).v("Accelerometer updates started!");
     }
 
     @SuppressLint("LongLogTag")
     private void stopAccelerometerUpdates() {
-        Timber.tag(TAG).v("Stopping accelerometer updates...");
         if (accelerometerHandler != null) {
             accelerometerHandler.removeCallbacks(accelerometerRunnable);
             sensorManager.unregisterListener(this);
-            Timber.tag(TAG).v("Accelerometer updates stopped!");
         }
     }
 
     @SuppressLint("LongLogTag")
     private void startTimerUpdates() {
-        Timber.tag(TAG).v("Starting accelerometer updates...");
         elapsedTimeHandler = new Handler();
         elapsedTimeHandler.post(timerRunnable);
-        Timber.tag(TAG).v("Accelerometer updates started!");
     }
 
     @SuppressLint("LongLogTag")
     private void stopTimerUpdates() {
-        Timber.tag(TAG).v("Stopping timer updates...");
         if (elapsedTimeHandler != null) {
             elapsedTimeHandler.removeCallbacks(timerRunnable);
-            Timber.tag(TAG).v("Timer updates stopped!");
         }
     }
 
     @SuppressLint("LongLogTag")
     private void connectToMqttBroker() {
-        Timber.tag(TAG).v("Trying to connect to mqtt broker...");
-        String mqttBrokerUrl = "ssl://f0cdbc9159594b919d68036f1fc85241.s2.eu.hivemq.cloud:8883";
-        String username = "UPMFinalThesis2023";
-        String password = "UPMFinalThesis2023";
 
-        mqttClient = new MqttAndroidClient(getApplicationContext(), mqttBrokerUrl, MqttAsyncClient.generateClientId(), Ack.AUTO_ACK);
+        mqttClient = new MqttAndroidClient(getApplicationContext(), MQTT_BROKER_URL, MqttAsyncClient.generateClientId(), Ack.AUTO_ACK);
 
         mqttClient.setCallback(new MqttCallbackExtended() {
             @Override
             public void connectComplete(boolean reconnect, String serverURI) {
-                if (reconnect) {
-                    Timber.tag(TAG).v("Reconnected");
-                } else {
-                    Timber.tag(TAG).v("Connected");
-                }
             }
 
             @Override
             public void connectionLost(Throwable cause) {
-                Timber.tag(TAG).v("The mqtt connection lost!");
             }
 
             @Override
             public void messageArrived(String topic, MqttMessage message) {
-                Timber.tag(TAG).v("Mqtt message arrived!");
             }
 
             @Override
             public void deliveryComplete(IMqttDeliveryToken token) {
-                Timber.tag(TAG).v("Mqtt message delivered!");
             }
         });
 
         MqttConnectOptions connectOptions = new MqttConnectOptions();
-        connectOptions.setUserName(username);
-        connectOptions.setPassword(password.toCharArray());
+        connectOptions.setUserName(MQTT_BROKER_USERNAME);
+        connectOptions.setPassword(MQTT_BROKER_PASSWORD.toCharArray());
         connectOptions.setAutomaticReconnect(true);
 
         mqttClient.connect(connectOptions, null, new IMqttActionListener() {
             @Override
             public void onSuccess(IMqttToken asyncActionToken) {
-                Timber.tag(TAG).v("Connect to mqtt broker was successful!");
             }
 
             @Override
             public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                Timber.tag(TAG).v("Connect to mqtt broker failed!");
                 exception.printStackTrace();
             }
         });
@@ -361,15 +321,14 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
     }
 
     private void sendNotification() {
-        Timber.tag(TAG).v("Sending notification...");
         Intent intent = getPackageManager().getLaunchIntentForPackage(getPackageName());
         PendingIntent pendingIntent = PendingIntent.getActivity(getApplicationContext(), 0,
                 intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         // Build the notification
         Notification notification = new Notification.Builder(this, CHANNEL_ID)
-                .setContentTitle("Did you reach your destination?")
-                .setContentText("If yes, please stop the measurement or close the app!")
+                .setContentTitle(getString(R.string.did_you_reach_your_destination))
+                .setContentText(getString(R.string.stop_measurement_message))
                 .setSmallIcon(R.drawable.ramp_logo)
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
@@ -378,18 +337,17 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         // Send the notification
         NotificationManager notificationManager = getSystemService(NotificationManager.class);
         notificationManager.notify(0, notification);
-        Timber.tag(TAG).v("Notification sent!");
     }
 
     private void startForegroundMeasurementService() {
         Intent serviceIntent = new Intent(this, MeasurementService.class);
-        serviceIntent.setAction("START_FOREGROUND_ACTION");
+        serviceIntent.setAction(START_FOREGROUND_ACTION);
         startForegroundService(serviceIntent);
     }
 
     private void stopForegroundMeasurementService() {
         Intent serviceIntent = new Intent(this, MeasurementService.class);
-        serviceIntent.setAction("STOP_FOREGROUND_ACTION");
+        serviceIntent.setAction(STOP_FOREGROUND_ACTION);
         startForegroundService(serviceIntent);
     }
 
@@ -415,13 +373,13 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         @SuppressLint("SetTextI18n")
         @Override
         public void onReceive(Context context, Intent intent) {
-            double latitude = intent.getDoubleExtra("latitude", 0.0);
-            double longitude = intent.getDoubleExtra("longitude", 0.0);
-            float accuracy = intent.getFloatExtra("accuracy", 0.0f);
+            double latitude = intent.getDoubleExtra(LATITUDE, 0.0);
+            double longitude = intent.getDoubleExtra(LONGITUDE, 0.0);
+            float accuracy = intent.getFloatExtra(ACCURACY, 0.0f);
             currentLocation = new LatLng(latitude, longitude);
 
-            String gpsSignalPower = accuracy > 7 ? "Weak" : "Strong";
-            gpsSignalTextView.setText("GPS signal: " + gpsSignalPower);
+            String gpsSignalPower = accuracy > 7 ? getString(R.string.gps_signal_weak) : getString(R.string.gps_signal_strong);
+            gpsSignalTextView.setText(getString(R.string.gps_signal_label) + gpsSignalPower);
 
             if (!isMeasuring) {
                 enableButton(startButton);

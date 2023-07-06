@@ -1,13 +1,20 @@
 package technology.moro.thesis.activities;
 
+import static technology.moro.thesis.Constants.AUTHORIZATION_HEADER;
 import static technology.moro.thesis.Constants.BASE_URL;
+import static technology.moro.thesis.Constants.BEARER_PREFIX;
 import static technology.moro.thesis.Constants.EMAIL_KEY;
 import static technology.moro.thesis.Constants.JSON_MEDIA_TYPE;
 import static technology.moro.thesis.Constants.JWT_TOKEN_KEY;
+import static technology.moro.thesis.Constants.LATITUDE;
+import static technology.moro.thesis.Constants.LONGITUDE;
 import static technology.moro.thesis.Constants.PREF_NAME;
 import static technology.moro.thesis.Constants.REPORT_URL;
+import static technology.moro.thesis.Utils.createSSLSocketFactory;
+import static technology.moro.thesis.Utils.createTrustManager;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -15,12 +22,14 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
@@ -37,11 +46,8 @@ import okhttp3.Response;
 import technology.moro.thesis.R;
 import technology.moro.thesis.dtos.ReportDTO;
 import technology.moro.thesis.fragments.MapFragment;
-import timber.log.Timber;
 
 public class ReportIncidentActivity extends AppCompatActivity {
-    private static final String TAG = "!===== ReportIncidentActivity =====!";
-
     private Spinner severitySpinner;
     private EditText descriptionEditText;
     private Button reportButton;
@@ -66,7 +72,11 @@ public class ReportIncidentActivity extends AppCompatActivity {
         reportButton = findViewById(R.id.report_button);
 
         sharedPreferences = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
-        httpClient = new OkHttpClient();
+
+        httpClient = new OkHttpClient.Builder()
+                .sslSocketFactory(createSSLSocketFactory(), createTrustManager()[0])
+                .hostnameVerifier((hostname, session) -> true) // Bypass hostname verification
+                .build();
 
         ArrayAdapter<CharSequence> severityAdapter = ArrayAdapter.createFromResource(
                 this,
@@ -78,19 +88,29 @@ public class ReportIncidentActivity extends AppCompatActivity {
 
         reportButton.setEnabled(false);
 
-        reportButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String severity = severitySpinner.getSelectedItem().toString();
-                String description = descriptionEditText.getText().toString().trim();
+        reportButton.setOnClickListener(v -> {
+            String severity = severitySpinner.getSelectedItem().toString();
+            String description = descriptionEditText.getText().toString().trim();
 
-                reportIncident(severity, description);
-            }
+            hideKeyboard();
+
+            reportIncident(severity, description);
         });
 
         locationUpdateReceiver = new LocationUpdateReceiver();
         IntentFilter filter = new IntentFilter("map_location_update");
         LocalBroadcastManager.getInstance(this).registerReceiver(locationUpdateReceiver, filter);
+    }
+
+    public void hideKeyboard() {
+        InputMethodManager imm = (InputMethodManager) this.getSystemService(Activity.INPUT_METHOD_SERVICE);
+        //Find the currently focused view, so we can grab the correct window token from it.
+        View view = this.getCurrentFocus();
+        //If no view currently has focus, create a new one, just so we can grab a window token from it
+        if (view == null) {
+            view = new View(this);
+        }
+        imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
     }
 
     private void reportIncident(String severity, String description) {
@@ -103,22 +123,21 @@ public class ReportIncidentActivity extends AppCompatActivity {
         Request request = new Request.Builder()
                 .url(BASE_URL + REPORT_URL)
                 .post(body)
-                .addHeader("Authorization", "Bearer " + jwtToken)
+                .addHeader(AUTHORIZATION_HEADER, BEARER_PREFIX + jwtToken)
                 .build();
 
         httpClient.newCall(request).enqueue(new Callback() {
             @Override
-            public void onFailure(Call call, IOException e) {
-                Timber.tag(TAG).e("Request failed: %s", e.getMessage());
-                showToast("Failed to report incident");
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                showToast(getString(R.string.failed_incident_report_not_available));
             }
 
             @Override
-            public void onResponse(Call call, Response response) {
+            public void onResponse(@NonNull Call call, @NonNull Response response) {
                 if (response.isSuccessful()) {
-                    showToast("Incident reported successfully");
+                    showToast(getString(R.string.successful_incident_report));
                 } else {
-                    showToast("Failed to report incident");
+                    showToast(getString(R.string.failed_incident_report));
                 }
                 response.close();
                 navigateToHome();
@@ -127,12 +146,9 @@ public class ReportIncidentActivity extends AppCompatActivity {
     }
 
     private void showToast(final String message) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                Toast t = Toast.makeText(ReportIncidentActivity.this, message, Toast.LENGTH_LONG);
-                t.show();
-            }
+        runOnUiThread(() -> {
+            Toast t = Toast.makeText(ReportIncidentActivity.this, message, Toast.LENGTH_LONG);
+            t.show();
         });
     }
 
@@ -153,8 +169,8 @@ public class ReportIncidentActivity extends AppCompatActivity {
         @SuppressLint("SetTextI18n")
         @Override
         public void onReceive(Context context, Intent intent) {
-            double latitude = intent.getDoubleExtra("latitude", 0.0);
-            double longitude = intent.getDoubleExtra("longitude", 0.0);
+            double latitude = intent.getDoubleExtra(LATITUDE, 0.0);
+            double longitude = intent.getDoubleExtra(LONGITUDE, 0.0);
             userLocation = new LatLng(latitude, longitude);
             reportButton.setEnabled(true);
         }
