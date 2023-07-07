@@ -32,8 +32,8 @@ public class Constants {
     public static final String ACCURACY = "accuracy";
 
     public static final String MQTT_BROKER_URL = "ssl://f0cdbc9159594b919d68036f1fc85241.s2.eu.hivemq.cloud:8883";
-    public static final String MQTT_BROKER_USERNAME = "UPMFinalThesis2023";
-    public static final String MQTT_BROKER_PASSWORD = "UPMFinalThesis2023";
+    public static final String MQTT_BROKER_USERNAME = "AndroidClient2023";
+    public static final String MQTT_BROKER_PASSWORD = "AndroidClient2023";
     public static final String MQTT_BROKER_TOPIC = "measurements";
 
     public static final String SEVERITY_HIGH = "HIGH";
